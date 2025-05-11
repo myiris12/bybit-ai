@@ -427,11 +427,9 @@ async function cancelUnfilledOrdersAfterTimeout(symbol, timeoutMs = 3 * 60 * 100
 
     setTimeout(async () => {
         try {
-            const res = await client.getOrders({
+            const res = await client.getActiveOrders({
                 category: 'linear',
-                symbol: symbol,
-                orderStatus: 'New',
-                limit: 50
+                symbol: symbol
             });
             const open = res.result.list || [];
             if (open.length > 0) {
@@ -448,11 +446,10 @@ async function cancelUnfilledOrdersAfterTimeout(symbol, timeoutMs = 3 * 60 * 100
 
 async function cancelOpenTPOrders(symbol) {
     try {
-        const res = await client.getOpenOrders({
+        const res = await client.getActiveOrders({
             category: 'linear',
             symbol: symbol
         });
-
         const openOrders = res.result.list || [];
 
         for (const order of openOrders) {
@@ -470,6 +467,42 @@ async function cancelOpenTPOrders(symbol) {
     }
 }
 
+async function closeBybitPosition(signal, symbol) {
+    try {
+        // 1. 현재 포지션 확인
+        const res = await client.getPositionInfo({ category: 'linear', symbol });
+        const pos = res.result.list.find(p => p.symbol === symbol);
+
+        if (!pos || pos.size === '0') {
+            console.log('❌ 닫을 포지션 없음 – 이미 청산된 상태');
+            return;
+        }
+
+        const side = pos.side === 'Buy' ? 'Sell' : 'Buy'; // 반대 주문
+        const qty = parseFloat(pos.size);
+
+        const order = {
+            category: 'linear',
+            symbol,
+            side,
+            orderType: 'Market',
+            qty: qty.toFixed(4),
+            reduceOnly: true,
+            timeInForce: 'IOC',
+            orderLinkId: `close-${Date.now()}`
+        };
+
+        const result = await client.submitOrder(order);
+
+        if (result.retCode === 0) {
+            console.log(`✅ 포지션 청산 완료 (${side} ${qty})`);
+        } else {
+            console.error(`❌ 포지션 청산 실패:`, result.retMsg);
+        }
+    } catch (e) {
+        console.error('❌ close_position 중 예외 발생:', e.message || e);
+    }
+}
 
 
 // 실행
@@ -483,7 +516,7 @@ async function main() {
             case 'enter_position':
                 await cancelAllOpenOrders(symbol);
                 await placeBybitOrder(tradingSignal, symbol, 10);
-                cancelUnfilledOrdersAfterTimeout(symbol); // 체결 안 되면 3분 후 정리
+                cancelUnfilledOrdersAfterTimeout(symbol, 1000 * 3); // 체결 안 되면 3분 후 정리
                 break;
             case 'update_position':
                 await cancelOpenTPOrders(symbol);
@@ -501,7 +534,7 @@ async function main() {
         console.error('Failed to fetch or analyze data:', error);
     }
 
-    console.log('end');
+    console.log('Signal End');
 }
 
 main(); 
