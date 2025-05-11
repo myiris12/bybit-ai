@@ -1,10 +1,58 @@
 import { RestClientV5 } from 'bybit-api';
 import OpenAI from 'openai';
-import pLimit from 'p-limit';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
 dotenv.config();
+
+// Rate limiting 설정
+const RATE_LIMIT = {
+    tokensPerMinute: 30000,
+    requestsPerMinute: 60,
+    retryDelay: 5000, // 5초
+    maxRetries: 3
+};
+
+// Rate limiting을 위한 토큰 카운터
+let tokenCount = 0;
+let lastResetTime = Date.now();
+
+// 토큰 카운터 리셋 함수
+function resetTokenCounter() {
+    const now = Date.now();
+    if (now - lastResetTime >= 60000) { // 1분마다 리셋
+        tokenCount = 0;
+        lastResetTime = now;
+    }
+}
+
+// 토큰 사용량 체크 함수
+function checkTokenLimit(estimatedTokens) {
+    resetTokenCounter();
+    if (tokenCount + estimatedTokens > RATE_LIMIT.tokensPerMinute) {
+        const waitTime = 60000 - (Date.now() - lastResetTime);
+        if (waitTime > 0) {
+            throw new Error(`Rate limit reached. Please wait ${Math.ceil(waitTime / 1000)} seconds.`);
+        }
+    }
+    tokenCount += estimatedTokens;
+}
+
+// 재시도 로직이 포함된 API 호출 함수
+async function callWithRetry(fn, retries = RATE_LIMIT.maxRetries) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (error) {
+            if (error.message.includes('Rate limit') && i < retries - 1) {
+                console.log(`Rate limit reached. Retrying in ${RATE_LIMIT.retryDelay / 1000} seconds...`);
+                await new Promise(resolve => setTimeout(resolve, RATE_LIMIT.retryDelay));
+                continue;
+            }
+            throw error;
+        }
+    }
+}
 
 // Web Crypto API polyfill for Node.js
 if (!global.crypto) {
@@ -129,7 +177,7 @@ const tradingSignalTool = {
     }
 };
 
-async function getMarketData(symbol = 'BTCUSDT') {
+async function getMarketData(symbol) {
     try {
         // 1분봉 데이터 가져오기
         const kline1m = await client.getKline({
@@ -206,56 +254,59 @@ async function getMarketData(symbol = 'BTCUSDT') {
 
 // 🧠 GPT 판단 실행 함수
 async function getTradingSignal(marketData) {
-    const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        temperature: 0,
-        tools: [tradingSignalTool],
-        tool_choice: "auto",
-        messages: [
-            { role: "system", content: SYSTEM_INSTRUCTION },
-            { role: "user", content: JSON.stringify(marketData) }
-        ]
-    });
+    // 대략적인 토큰 사용량 추정 (실제로는 더 정확한 계산 필요)
+    const estimatedTokens = 1000;
+    checkTokenLimit(estimatedTokens);
 
-    const choice = response.choices?.[0];
+    return await callWithRetry(async () => {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o",
+            temperature: 0,
+            tools: [tradingSignalTool],
+            tool_choice: "auto",
+            messages: [
+                { role: "system", content: SYSTEM_INSTRUCTION },
+                { role: "user", content: JSON.stringify(marketData) }
+            ]
+        });
 
-    if (!choice) {
-        console.error("❌ GPT 응답 없음:", JSON.stringify(response, null, 2));
-        throw new Error("GPT 응답이 비어 있습니다");
-    }
+        const choice = response.choices?.[0];
 
-    const message = choice.message;
-
-    if (message?.tool_calls?.[0]) {
-        // ✅ tool function 호출된 경우
-        const toolCall = message.tool_calls[0];
-        try {
-            const parsed = JSON.parse(toolCall.function.arguments);
-            return parsed;
-        } catch (err) {
-            console.error("❌ tool_call JSON 파싱 실패:", toolCall.function.arguments);
-            throw new Error("GPT 툴 호출 JSON 파싱 실패");
+        if (!choice) {
+            console.error("❌ GPT 응답 없음:", JSON.stringify(response, null, 2));
+            throw new Error("GPT 응답이 비어 있습니다");
         }
-    } else if (message?.content) {
-        // ✅ 일반 메시지 응답 (tool_call 없이 content로 JSON 준 경우)
-        try {
-            if (typeof message.content === 'string') {
-                // 마크다운 코드 블록 제거
-                const cleanContent = message.content.replace(/```json\n?|\n?```/g, '').trim();
-                return JSON.parse(cleanContent);
-            } else if (typeof message.content === 'object') {
-                return message.content; // 이미 파싱된 JSON 객체일 경우
-            } else {
-                throw new Error("GPT 응답 content 타입이 string/object 아님");
+
+        const message = choice.message;
+
+        if (message?.tool_calls?.[0]) {
+            const toolCall = message.tool_calls[0];
+            try {
+                const parsed = JSON.parse(toolCall.function.arguments);
+                return parsed;
+            } catch (err) {
+                console.error("❌ tool_call JSON 파싱 실패:", toolCall.function.arguments);
+                throw new Error("GPT 툴 호출 JSON 파싱 실패");
             }
-        } catch (err) {
-            console.error("❌ GPT content 파싱 실패:", message.content);
-            throw new Error("GPT 응답 JSON 파싱 실패");
+        } else if (message?.content) {
+            try {
+                if (typeof message.content === 'string') {
+                    const cleanContent = message.content.replace(/```json\n?|\n?```/g, '').trim();
+                    return JSON.parse(cleanContent);
+                } else if (typeof message.content === 'object') {
+                    return message.content;
+                } else {
+                    throw new Error("GPT 응답 content 타입이 string/object 아님");
+                }
+            } catch (err) {
+                console.error("❌ GPT content 파싱 실패:", message.content);
+                throw new Error("GPT 응답 JSON 파싱 실패");
+            }
+        } else {
+            console.error("❌ GPT 응답 message 비어 있음:", JSON.stringify(message, null, 2));
+            throw new Error("GPT 응답이 비어 있습니다");
         }
-    } else {
-        console.error("❌ GPT 응답 message 비어 있음:", JSON.stringify(message, null, 2));
-        throw new Error("GPT 응답이 비어 있습니다");
-    }
+    });
 }
 
 async function placeBybitOrder(signal, symbol, capitalUSD) {
@@ -544,40 +595,38 @@ const symbols = [
     'XAIUSDT',
     'PYTHUSDT',
     'EOSUSDT',
-    'SATSUSDT',
     'BERAUSDT',
-    'BONKUSDT',
-    'WIFUSDT',
-    'VIRTUALUSDT',
-    'FLOKIUSDT'
 ];
-
-// 동시에 실행할 최대 심볼 수 (API 부하 고려)
-const CONCURRENCY_LIMIT = 3;
 
 // 반복 간격 (ms)
 const INTERVAL_MS = 30 * 1000;
-
-// limit 컨트롤러 생성
-const limit = pLimit(CONCURRENCY_LIMIT);
 
 // 루프 함수
 async function runMainWithLimit() {
     console.log(`🔁 트레이딩 사이클 시작: ${new Date().toLocaleTimeString()}`);
 
     try {
-        await Promise.all(
-            symbols.map(symbol =>
-                limit(() =>
-                    main(symbol).catch(err => {
-                        console.error(`❌ [${symbol}] 처리 실패:`, err.message);
-                    })
-                )
-            )
-        );
+        // 심볼을 순차적으로 처리
+        for (const symbol of symbols) {
+            try {
+                console.log(`\n📊 ${symbol} 처리 시작`);
+                await main(symbol);
+                console.log(`✅ ${symbol} 처리 완료`);
+
+                // 마지막 심볼이 아닌 경우에만 대기
+                if (symbol !== symbols[symbols.length - 1]) {
+                    console.log(`⏳ 다음 심볼 처리까지 10초 대기...`);
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+            } catch (err) {
+                console.error(`❌ [${symbol}] 처리 실패:`, err.message);
+            }
+        }
     } catch (err) {
         console.error('❌ 루프 전체 실패:', err.message);
     } finally {
+        // 모든 심볼 처리 후 다음 사이클까지 대기
+        console.log(`\n⏳ 다음 트레이딩 사이클까지 ${INTERVAL_MS / 1000}초 대기...`);
         setTimeout(runMainWithLimit, INTERVAL_MS);
     }
 }
