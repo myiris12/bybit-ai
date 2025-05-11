@@ -1,0 +1,25 @@
+{
+  "name": "bybit-ai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/myiris12/bybit-ai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/myiris12/bybit-ai/issues"
+  },
+  "homepage": "https://github.com/myiris12/bybit-ai#readme",
+  "dependencies": {
+    "bybit-api": "^4.1.7",
+    "dotenv": "^16.5.0",
+    "openai": "^4.98.0"
+  }
+}
