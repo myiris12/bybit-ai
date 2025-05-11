@@ -21,6 +21,7 @@
   "dependencies": {
     "bybit-api": "^4.1.7",
     "dotenv": "^16.5.0",
-    "openai": "^4.98.0"
+    "openai": "^4.98.0",
+    "crypto": "^1.0.1"
   }
 }
