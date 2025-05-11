@@ -1,9 +1,12 @@
-const { RestClientV5 } = require('bybit-api');
-const OpenAI = require('openai');
-require('dotenv').config();
+import { RestClientV5 } from 'bybit-api';
+import OpenAI from 'openai';
+import pLimit from 'p-limit';
+import dotenv from 'dotenv';
+import crypto from 'crypto';
+
+dotenv.config();
 
 // Web Crypto API polyfill for Node.js
-const crypto = require('crypto');
 if (!global.crypto) {
     global.crypto = crypto;
 }
@@ -266,7 +269,7 @@ async function placeBybitOrder(signal, symbol, capitalUSD) {
     const numOrders = signal.split;
     const perCapital = capitalUSD / numOrders;
 
-    console.log(`🚀 ${numOrders}건 분할 주문 시작 (총 자본: ${capitalUSD} USDT)`);
+    console.log(`�� ${numOrders}건 분할 주문 시작 (총 자본: ${capitalUSD} USDT)`);
 
     // 1. 레버리지 설정
     try {
@@ -506,9 +509,9 @@ async function closeBybitPosition(signal, symbol) {
 
 
 // 실행
-async function main() {
+async function main(symbol) {
     try {
-        const symbol = 'MOVEUSDT';
+        console.log(`🚀 Start Trading Signal: ${symbol}`);
         const marketData = await getMarketData(symbol);
         const tradingSignal = await getTradingSignal(marketData);
         console.log('Trading Signal:', tradingSignal);
@@ -516,7 +519,7 @@ async function main() {
             case 'enter_position':
                 await cancelAllOpenOrders(symbol);
                 await placeBybitOrder(tradingSignal, symbol, 10);
-                cancelUnfilledOrdersAfterTimeout(symbol, 1000 * 3); // 체결 안 되면 3분 후 정리
+                cancelUnfilledOrdersAfterTimeout(symbol, 1000 * 60 * 3); // 체결 안 되면 3분 후 정리
                 break;
             case 'update_position':
                 await cancelOpenTPOrders(symbol);
@@ -533,8 +536,51 @@ async function main() {
     } catch (error) {
         console.error('Failed to fetch or analyze data:', error);
     }
-
-    console.log('Signal End');
 }
 
-main(); 
+// 심볼 목록 (확장 가능)
+const symbols = [
+    'MOVEUSDT',
+    'XAIUSDT',
+    'PYTHUSDT',
+    'EOSUSDT',
+    'SATSUSDT',
+    'BERAUSDT',
+    'BONKUSDT',
+    'WIFUSDT',
+    'VIRTUALUSDT',
+    'FLOKIUSDT'
+];
+
+// 동시에 실행할 최대 심볼 수 (API 부하 고려)
+const CONCURRENCY_LIMIT = 3;
+
+// 반복 간격 (ms)
+const INTERVAL_MS = 30 * 1000;
+
+// limit 컨트롤러 생성
+const limit = pLimit(CONCURRENCY_LIMIT);
+
+// 루프 함수
+async function runMainWithLimit() {
+    console.log(`🔁 트레이딩 사이클 시작: ${new Date().toLocaleTimeString()}`);
+
+    try {
+        await Promise.all(
+            symbols.map(symbol =>
+                limit(() =>
+                    main(symbol).catch(err => {
+                        console.error(`❌ [${symbol}] 처리 실패:`, err.message);
+                    })
+                )
+            )
+        );
+    } catch (err) {
+        console.error('❌ 루프 전체 실패:', err.message);
+    } finally {
+        setTimeout(runMainWithLimit, INTERVAL_MS);
+    }
+}
+
+// 시작
+runMainWithLimit();
