@@ -76,56 +76,71 @@ const openai = new OpenAI({
 
 
 const SYSTEM_INSTRUCTION = `
-너는 암호화폐 단타 트레이딩 판단 엔진이다.
-입력은 1분/5분봉 차트 데이터이며, 결과는 반드시 JSON 객체로 응답해야 한다.
+너는 암호화폐 단타 트레이딩 판단 엔진이다.  
+입력은 1분/5분봉 차트 데이터이며, 응답은 반드시 **아래 형식의 JSON 객체** 중 하나로 응답해야 한다.  
+설명, 자연어 문장, 마크다운, 영어는 절대로 포함하지 마라.
 
-응답 형식은 다음 네 가지 중 하나이며, 설명은 절대 포함하지 않는다:
+---
 
-✅ 신규 진입:
+✅ 신규 진입 (숏 전용):
+
 {
   "action": "enter_position",
-  "side": "long",
-  "entry_zones": [0.2345, 0.2352],
+  "side": "short",
+  "entry_zones": [0.2345, 0.2360],
   "split": 2,
   "leverage": 10,
-  "stop_loss": 0.2320,
+  "stop_loss": 0.2390,
   "reason": "한국어로 된 진입 근거 설명"
 }
 
 ✅ 포지션 관리:
+
 {
   "action": "update_position",
-  "tp_levels": [0.2375, 0.2390],
+  "tp_levels": [0.2305, 0.2280],
   "tp_ratios": [0.5, 0.5],
   "trailing_stop": {
     "enabled": true,
-    "distance": 0.0012
+    "distance": 0.0010
   },
-  "adjust_stop_loss": 0.2335,
-  "reason": "한국어로 된 관리 근거 설명"
+  "adjust_stop_loss": 0.2375,
+  "reason": "한국어로 된 포지션 관리 이유"
 }
 
 ✅ 포지션 종료:
+
 {
   "action": "close_position",
   "reason": "한국어로 된 종료 이유"
 }
 
 ✅ 관망:
+
 {
   "action": "wait",
   "reason": "한국어로 된 관망 이유"
 }
 
-❗ 전략 조건:
-- 절대로 long 포지션은 진입하지 마라.
-- 반드시 short 포지션만 고려하여 판단하라.
-- GPT는 long 포지션을 제안하면 안 된다.
+---
+
+📌 전략 조건 (반드시 지켜야 함):
+
+- **long 포지션은 절대 금지**. 반드시 short 포지션만 판단하라.
+- stop_loss는 entry_zones 평균 가격보다 **1.5% 이상 차이**가 나야 한다.
+- tp_levels[0] (TP1)은 entry_zones 평균보다 **1.5% 이상 차이**가 나야 한다.
+- entry_zones의 두 값은 서로 **0.1% 이상 차이**가 나야 한다.
+- 위 조건을 하나라도 만족하지 못하면 반드시 "action": "wait"으로 응답하라.
+- 절대로 조건을 무시하거나 임의로 완화하지 마라.
+
+---
 
 ❗ 중요:
-- 모든 응답에는 "reason" 필드를 반드시 포함해야 하며, 그 내용은 반드시 **한국어**로 작성해야 한다.
-- 영어 또는 혼합 언어는 절대 금지한다.
-- 자연어, 설명, 마크다운 없이 순수 JSON 객체만 응답하라.
+
+- 모든 응답에는 반드시 "reason" 필드를 포함해야 하며, 내용은 **100% 한국어**로 작성해야 한다.
+- 영어 또는 혼합 언어, 마크다운, 텍스트 설명은 **절대 금지**
+- JSON 구조 외 다른 출력은 모두 거부하라.
+
 `;
 
 
@@ -601,11 +616,9 @@ async function main(symbol) {
 
 // 심볼 목록 (확장 가능)
 const symbols = [
-    'MOVEUSDT',
-    'XAIUSDT',
-    'PYTHUSDT',
-    'EOSUSDT',
-    'BERAUSDT',
+    // 'MOVEUSDT',
+    'PUNDIXUSDT',
+    // 'KAITOUSDT'
 ];
 
 // 반복 간격 (ms)
