@@ -77,6 +77,7 @@ const openai = new OpenAI({
 
 const SYSTEM_INSTRUCTION = `
 너는 암호화폐 단타 트레이딩 판단 엔진이다.  
+시장 상황, 추세, 주요 지표(MA, RSI, 볼린저밴드 등)를 중심으로 분석해야 한다.
 입력은 1분/5분봉 차트 데이터이며, 응답은 반드시 **아래 형식의 JSON 객체** 중 하나로 응답해야 한다.  
 설명, 자연어 문장, 마크다운, 영어는 절대로 포함하지 마라.
 
@@ -127,9 +128,7 @@ const SYSTEM_INSTRUCTION = `
 📌 전략 조건 (반드시 지켜야 함):
 
 - **long 포지션은 절대 금지**. 반드시 short 포지션만 판단하라.
-- stop_loss는 entry_zones 평균 가격보다 **1.5% 이상 차이**가 나야 한다.
-- tp_levels[0] (TP1)은 entry_zones 평균보다 **1.5% 이상 차이**가 나야 한다.
-- entry_zones의 두 값은 서로 **0.1% 이상 차이**가 나야 한다.
+- stop_loss는 entry_zones 평균 가격보다 **0.5% 이상 차이**가 나야 한다.
 - 위 조건을 하나라도 만족하지 못하면 반드시 "action": "wait"으로 응답하라.
 - 절대로 조건을 무시하거나 임의로 완화하지 마라.
 
@@ -785,11 +784,12 @@ async function main(symbol) {
     try {
         console.log(`🚀 Start Trading Signal: ${symbol}`);
         const marketData = await getMarketData(symbol);
-        const tradingInfo = await getTradingInfoWithGPT(marketData);
-        console.log(tradingInfo);
-        /*
+        // const tradingInfo = await getTradingInfoWithGPT(marketData);
+        // console.log(tradingInfo);
+
         const tradingSignal = await getTradingSignal(marketData);
         console.log('Trading Signal:', tradingSignal);
+        /*
         switch (tradingSignal.action) {
             case 'enter_position':
                 await cancelAllOpenOrders(symbol);
@@ -808,7 +808,8 @@ async function main(symbol) {
                 console.log('🔄 관망 상태');
                 break;
         }
-                */
+        */
+
     } catch (error) {
         console.error('Failed to fetch or analyze data:', error);
     }
@@ -816,9 +817,9 @@ async function main(symbol) {
 
 // 심볼 목록 (확장 가능)
 const symbols = [
-    // 'MOVEUSDT',
+    'MOVEUSDT',
     'PUNDIXUSDT',
-    // 'KAITOUSDT'
+    'KAITOUSDT'
 ];
 
 // 반복 간격 (ms)
