@@ -117,6 +117,11 @@ const SYSTEM_INSTRUCTION = `
   "reason": "한국어로 된 관망 이유"
 }
 
+❗ 전략 조건:
+- 절대로 long 포지션은 진입하지 마라.
+- 반드시 short 포지션만 고려하여 판단하라.
+- GPT는 long 포지션을 제안하면 안 된다.
+
 ❗ 중요:
 - 모든 응답에는 "reason" 필드를 반드시 포함해야 하며, 그 내용은 반드시 **한국어**로 작성해야 한다.
 - 영어 또는 혼합 언어는 절대 금지한다.
@@ -312,6 +317,11 @@ async function getTradingSignal(marketData) {
 async function placeBybitOrder(signal, symbol, capitalUSD) {
     if (signal.action !== 'enter_position') {
         console.log('❌ 진입 시그널이 아님, 주문 생략');
+        return;
+    }
+
+    if (signal.action === 'enter_position' && signal.side == 'long') {
+        console.log(`🚫 [${symbol}] long 포지션 무시됨`);
         return;
     }
 
