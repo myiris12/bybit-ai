@@ -17,8 +17,6 @@ const CAPITAL_USD = 10;
 const LEVERAGE = 10;
 // 코인 별 모니터링 간격 (ms)
 const COIN_INTERVAL_MS = 10 * 1000;
-// 심볼 별 모니터링 간격 (ms)
-const LIST_INTERVAL_MS = 30 * 1000;
 
 // init telegram bot
 const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
@@ -89,11 +87,8 @@ async function runCheckSymbolLoop() {
 				await checkSymbol(symbol);
 				console.log(`✅ ${symbol} 분석 완료: ${new Date().toLocaleTimeString()}`);
 
-				// 마지막 심볼이 아닌 경우에만 대기
-				if (symbol !== symbols[symbols.length - 1]) {
-					console.log(`⏳ 다음 심볼 처리까지 ${COIN_INTERVAL_MS / 1000}초 대기...`);
-					await new Promise((resolve) => setTimeout(resolve, COIN_INTERVAL_MS));
-				}
+				console.log(`⏳ 다음 심볼 처리까지 ${COIN_INTERVAL_MS / 1000}초 대기...`);
+				await new Promise((resolve) => setTimeout(resolve, COIN_INTERVAL_MS));
 			} catch (err) {
 				console.error(`❌ [${symbol}] 분석 실패:`, err.message);
 				bot.sendMessage(TELEGRAM_CHAT_ID, `❌ [${symbol}] 분석 실패: ${err.message}`);
@@ -104,9 +99,7 @@ async function runCheckSymbolLoop() {
 		console.error('❌ 루프 전체 실패:', err.message);
 		bot.sendMessage(TELEGRAM_CHAT_ID, `❌ 루프 전체 실패: ${err.message}`);
 	} finally {
-		// 모든 심볼 처리 후 다음 사이클까지 대기
-		console.log(`\n⏳ 다음 트레이딩 사이클까지 ${LIST_INTERVAL_MS / 1000}초 대기...`);
-		setTimeout(runCheckSymbolLoop, LIST_INTERVAL_MS);
+		runCheckSymbolLoop();
 	}
 }
 
