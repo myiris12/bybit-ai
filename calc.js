@@ -48,6 +48,29 @@ export function calculateRSI(prices, period = 14) {
     return rsi;
 }
 
+export function calculateStochRSI(prices, period = 14) {
+    const rsi = calculateRSI(prices, period);
+    const stochRSI = Array(prices.length).fill(null);
+
+    for (let i = period * 2 - 1; i < prices.length; i++) {
+        const rsiSlice = rsi.slice(i - period + 1, i + 1);
+
+        // 유효한 RSI 값들만 체크
+        if (rsiSlice.some(v => v === null || v === undefined)) continue;
+
+        const minRSI = Math.min(...rsiSlice);
+        const maxRSI = Math.max(...rsiSlice);
+
+        if (maxRSI - minRSI === 0) {
+            stochRSI[i] = 0.5; // 중립값 처리
+        } else {
+            stochRSI[i] = (rsi[i] - minRSI) / (maxRSI - minRSI);
+        }
+    }
+
+    return stochRSI;
+}
+
 export function calculateBollingerBands(prices, period = 20, multiplier = 2) {
     const sma = calculateMA(prices, period);
     const stdDev = [];

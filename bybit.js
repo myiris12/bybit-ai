@@ -1,7 +1,7 @@
 import { RestClientV5 } from 'bybit-api';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { calculateMA, calculateRSI, calculateBollingerBands } from './calc.js';
+import { calculateMA, calculateRSI, calculateBollingerBands, calculateStochRSI } from './calc.js';
 
 // Web Crypto API polyfill
 if (typeof global.crypto === 'undefined') {
@@ -40,6 +40,7 @@ export async function getMarketData(symbol) {
                         'ma25': calculateMA(prices1m, 25),
                     },
                     'rsi14': calculateRSI(prices1m, 14),
+                    'stoch_rsi': calculateStochRSI(prices1m, 14),
                     'bollinger': calculateBollingerBands(prices1m)
                 },
                 '5m': {
@@ -49,11 +50,12 @@ export async function getMarketData(symbol) {
                         'ma25': calculateMA(prices5m, 25),
                     },
                     'rsi14': calculateRSI(prices5m, 14),
+                    'stoch_rsi': calculateStochRSI(prices5m, 14),
                     'bollinger': calculateBollingerBands(prices5m)
                 }
             },
             price_info: {
-                current_price: candles1m[0].close,
+                current_price: candles1m[candles1m.length - 1].close,
             },
             position
         };
@@ -62,29 +64,30 @@ export async function getMarketData(symbol) {
         result.snapshot = {
             '1m': {
                 'ma': {
-                    'ma7': result.timeframes['1m'].ma_series.ma7.find(v => v !== null),
-                    'ma25': result.timeframes['1m'].ma_series.ma25.find(v => v !== null),
+                    'ma7': result.timeframes['1m'].ma_series.ma7[result.timeframes['1m'].ma_series.ma7.length - 1],
+                    'ma25': result.timeframes['1m'].ma_series.ma25[result.timeframes['1m'].ma_series.ma25.length - 1],
                 },
-                'rsi14': result.timeframes['1m'].rsi14.find(v => v !== null),
+                'rsi14': result.timeframes['1m'].rsi14[result.timeframes['1m'].rsi14.length - 1],
+                'stoch_rsi': result.timeframes['1m'].stoch_rsi[result.timeframes['1m'].stoch_rsi.length - 1],
                 'bollinger': {
-                    'upper': result.timeframes['1m'].bollinger.upper.find(v => v !== null),
-                    'middle': result.timeframes['1m'].bollinger.middle.find(v => v !== null),
-                    'lower': result.timeframes['1m'].bollinger.lower.find(v => v !== null),
+                    'upper': result.timeframes['1m'].bollinger.upper[result.timeframes['1m'].bollinger.upper.length - 1],
+                    'middle': result.timeframes['1m'].bollinger.middle[result.timeframes['1m'].bollinger.middle.length - 1],
+                    'lower': result.timeframes['1m'].bollinger.lower[result.timeframes['1m'].bollinger.lower.length - 1],
                 },
-                price: result.timeframes['1m'].ohlcv[0].close,
+                price: result.timeframes['1m'].ohlcv[result.timeframes['1m'].ohlcv.length - 1].close,
             },
             '5m': {
                 'ma': {
-                    'ma7': result.timeframes['5m'].ma_series.ma7.find(v => v !== null),
-                    'ma25': result.timeframes['5m'].ma_series.ma25.find(v => v !== null),
+                    'ma7': result.timeframes['5m'].ma_series.ma7[result.timeframes['5m'].ma_series.ma7.length - 1],
+                    'ma25': result.timeframes['5m'].ma_series.ma25[result.timeframes['5m'].ma_series.ma25.length - 1],
                 },
-                'rsi14': result.timeframes['5m'].rsi14.find(v => v !== null),
+                'rsi14': result.timeframes['5m'].rsi14[result.timeframes['5m'].rsi14.length - 1],
                 'bollinger': {
-                    'upper': result.timeframes['5m'].bollinger.upper.find(v => v !== null),
-                    'middle': result.timeframes['5m'].bollinger.middle.find(v => v !== null),
-                    'lower': result.timeframes['5m'].bollinger.lower.find(v => v !== null),
+                    'upper': result.timeframes['5m'].bollinger.upper[result.timeframes['5m'].bollinger.upper.length - 1],
+                    'middle': result.timeframes['5m'].bollinger.middle[result.timeframes['5m'].bollinger.middle.length - 1],
+                    'lower': result.timeframes['5m'].bollinger.lower[result.timeframes['5m'].bollinger.lower.length - 1],
                 },
-                price: result.timeframes['5m'].ohlcv[0].close,
+                price: result.timeframes['5m'].ohlcv[result.timeframes['5m'].ohlcv.length - 1].close,
             }
         }
         return result;
@@ -353,7 +356,6 @@ async function getCandles(symbol, interval, limit) {
         limit: 50
     });
 
-
     // 응답 데이터 가공
     const candles = klineResponse.result.list.map(candle => ({
         timestamp: parseInt(candle[0]),
@@ -363,7 +365,7 @@ async function getCandles(symbol, interval, limit) {
         close: parseFloat(candle[4]),
         volume: parseFloat(candle[5]),
         turnover: parseFloat(candle[6])
-    }));
+    })).reverse(); // 최신 데이터가 맨 뒤로 오도록 reverse
 
     return candles;
 }
