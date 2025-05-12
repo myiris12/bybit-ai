@@ -1,7 +1,14 @@
 import { RestClientV5 } from 'bybit-api';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { calculateRSI, calculateBollingerBands, calculateStochRSI, calculateMACD, calculateEMA } from './calc.js';
+import {
+	calculateRSI,
+	calculateBollingerBands,
+	calculateStochRSI,
+	calculateMACD,
+	calculateEMA,
+	calculateATR,
+} from './calc.js';
 
 // Web Crypto API polyfill
 if (typeof global.crypto === 'undefined') {
@@ -55,6 +62,7 @@ export async function getMarketData(symbol) {
 					current_price: candles5m[candles5m.length - 1].close,
 				},
 			},
+			atr: calculateATR(candles5m),
 			position,
 		};
 		return result;
@@ -158,8 +166,9 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 				category: 'linear',
 				symbol,
 				trailingStop: signal.trailing_stop.toFixed(4),
+				activePrice: signal.take_profit_levels[0].toFixed(4),
 			});
-			console.log('✅ 트레일링 스탑 설정 완료');
+			console.log('✅ 트레일링 스탑 설정 완료 (활성화 가격: ' + signal.take_profit_levels[0].toFixed(4) + ')');
 		} catch (e) {
 			console.error('❌ 트레일링 스탑 설정 실패:', e.message || e);
 		}
@@ -394,6 +403,9 @@ export async function getPositionsLog() {
 		console.error('API 호출 중 에러 발생:', error.message);
 	}
 
+	if (resultStr === '') {
+		return '🟢 현재 포지션 없음';
+	}
 	return resultStr;
 }
 

@@ -202,3 +202,30 @@ export function calculateMACD(prices, fastPeriod = 12, slowPeriod = 26, signalPe
 
 	return lastValues;
 }
+
+export function calculateATR(candles, period = 14) {
+	if (candles.length < period + 1) {
+		throw new Error('Not enough candles to calculate ATR');
+	}
+
+	var trs = [];
+
+	for (var i = 1; i <= period; i++) {
+		var prev = candles[i - 1];
+		var curr = candles[i];
+
+		var highLow = curr.high - curr.low;
+		var highClose = Math.abs(curr.high - prev.close);
+		var lowClose = Math.abs(curr.low - prev.close);
+
+		var tr = Math.max(highLow, highClose, lowClose);
+		trs.push(tr);
+	}
+
+	var sum = trs.reduce(function (acc, val) {
+		return acc + val;
+	}, 0);
+
+	var atr = sum / period;
+	return atr;
+}

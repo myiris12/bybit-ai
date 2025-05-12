@@ -33,7 +33,7 @@ async function checkSymbol(symbol) {
 			return;
 		}
 
-		// 로그 JSON 파일로 저장
+		// 마켓데이터 로그 JSON 파일로 저장
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const logDir = `logs/${symbol}`;
 		if (!fs.existsSync(logDir)) {
@@ -42,12 +42,15 @@ async function checkSymbol(symbol) {
 		const filename = `${logDir}/market_data_${timestamp}.json`;
 		fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 
+		// Trading 시그널 받기
 		const tradingSignal = await getTradingSignal(marketData);
 		console.log('Trading Signal:', tradingSignal);
 		let signalMessage = `✅ ${symbol} 분석 결과\nTrading Signal: ${tradingSignal.action}\n${tradingSignal.reason}`;
 		if (tradingSignal.action === 'enter_long' || tradingSignal.action === 'enter_short') {
-			signalMessage += `\n\nstop_loss: ${tradingSignal.stop_loss}`;
-			signalMessage += `\ntake_profit_level: ${tradingSignal.take_profit_levels.join(', ')}`;
+			signalMessage += `\n\nstop_loss: ${tradingSignal.stop_loss.toFixed(4)}`;
+			signalMessage += `\ntake_profit_level: ${tradingSignal.take_profit_levels
+				.map((level) => level.toFixed(4))
+				.join(', ')}`;
 			bot.sendMessage(TELEGRAM_CHAT_ID, signalMessage);
 		}
 
@@ -107,7 +110,7 @@ async function runCheckSymbolLoop() {
 
 // 심볼 목록 (확장 가능)
 let isRunning = true;
-let symbols = ['MOODENGUSDT', 'PUNDIXUSDT'];
+let symbols = ['BIGTIMEUSDT'];
 
 const main = async () => {
 	bot.sendMessage(TELEGRAM_CHAT_ID, 'Initialize Bybit Trading Bot');
@@ -148,8 +151,8 @@ const main = async () => {
 	});
 
 	bot.onText(/\/position/, async (msg) => {
-		const position = await getPositionsLog();
-		bot.sendMessage(TELEGRAM_CHAT_ID, position, {
+		const positionLog = await getPositionsLog();
+		bot.sendMessage(TELEGRAM_CHAT_ID, positionLog, {
 			parse_mode: 'HTML',
 		});
 	});
