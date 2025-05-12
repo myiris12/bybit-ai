@@ -165,7 +165,7 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 			await client.setTradingStop({
 				category: 'linear',
 				symbol,
-				trailingStop: signal.trailing_stop.toFixed(4),
+				trailingStop: signal.trailing_stop.toFixed(6),
 				activePrice: signal.take_profit_levels[0].toFixed(4),
 			});
 			console.log('✅ 트레일링 스탑 설정 완료 (활성화 가격: ' + signal.take_profit_levels[0].toFixed(4) + ')');
