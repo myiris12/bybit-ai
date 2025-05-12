@@ -34,13 +34,15 @@ async function checkSymbol(symbol) {
 		}
 
 		// 마켓데이터 로그 JSON 파일로 저장
-		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-		const logDir = `logs/${symbol}`;
-		if (!fs.existsSync(logDir)) {
-			fs.mkdirSync(logDir, { recursive: true });
+		if (isDebug) {
+			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+			const logDir = `logs/${symbol}`;
+			if (!fs.existsSync(logDir)) {
+				fs.mkdirSync(logDir, { recursive: true });
+			}
+			const filename = `${logDir}/market_data_${timestamp}.json`;
+			fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 		}
-		const filename = `${logDir}/market_data_${timestamp}.json`;
-		fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 
 		// Trading 시그널 받기
 		const tradingSignal = await getTradingSignal(marketData);
@@ -110,6 +112,7 @@ async function runCheckSymbolLoop() {
 
 // 심볼 목록 (확장 가능)
 let isRunning = true;
+let isDebug = false;
 let symbols = ['BIGTIMEUSDT'];
 
 const main = async () => {
@@ -148,6 +151,11 @@ const main = async () => {
 	bot.onText(/\/stop/, async (msg) => {
 		isRunning = false;
 		bot.sendMessage(TELEGRAM_CHAT_ID, 'Stop Bybit Trading Bot');
+	});
+
+	bot.onText(/\/debug/, async (msg) => {
+		isDebug = !isDebug;
+		bot.sendMessage(TELEGRAM_CHAT_ID, `Debug mode: ${isDebug ? 'ON' : 'OFF'}`);
 	});
 
 	bot.onText(/\/position/, async (msg) => {
