@@ -1,13 +1,24 @@
 import { getMarketData, placeBybitOrder, updateBybitPosition, cancelAllOpenOrders, cancelOpenTPOrders, cancelUnfilledOrdersAfterTimeout } from './bybit.js';
 import { getTradingOpinion, getTradingSignal } from './gpt.js';
 import fs from 'fs';
-// 실행
-const CAPITAL_USD = 10;
-const LEVERAGE = 10;
+import telegramBot from 'node-telegram-bot-api';
 
-async function main(symbol) {
+// 한번 주문에 사용할 가격
+const CAPITAL_USD = 10;
+// 레버리지
+const LEVERAGE = 10;
+// 코인 별 모니터링 간격 (ms)
+const COIN_INTERVAL_MS = 5 * 1000;
+// 심볼 별 모니터링 간격 (ms)
+const LIST_INTERVAL_MS = 30 * 1000;
+
+// init telegram bot
+const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const bot = new telegramBot(TELEGRAM_API_KEY, { polling: true });
+
+async function checkSymbol(symbol) {
     try {
-        console.log(`🚀 Start Trading Signal: ${symbol} - ${new Date().toLocaleTimeString()}`);
         const marketData = await getMarketData(symbol);
 
         // JSON 파일로 저장
@@ -15,13 +26,13 @@ async function main(symbol) {
         const filename = `logs/market_data_${timestamp}.json`;
         fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 
-
         // 트레이딩 의견 주석 처리
         // const tradingOpinion = await getTradingOpinion(marketData);
         // console.log(tradingOpinion);
         
         const tradingSignal = await getTradingSignal(marketData);
         console.log('Trading Signal:', tradingSignal);
+        bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol} 분석 결과\nTrading Signal: ${tradingSignal.action}\n${tradingSignal.reason}`);
         
         switch (tradingSignal.action) {
             case 'enter_position':
@@ -46,25 +57,20 @@ async function main(symbol) {
     }
 }
 
-// 심볼 목록 (확장 가능)
-let symbols = ['MOVEUSDT'];
-
-// 코인 별 모니터링 간격 (ms)
-const COIN_INTERVAL_MS = 5 * 1000;
-// 심볼 별 모니터링 간격 (ms)
-const LIST_INTERVAL_MS = 30 * 1000;
-
-// main 루프 함수
-async function runMainLoop() {
-    console.log(`🔁 트레이딩 사이클 시작: ${new Date().toLocaleTimeString()}`);
+// checkSymbol 루프 함수
+async function runCheckSymbolLoop() {
+    if (!isRunning) {
+        setTimeout(runCheckSymbolLoop, LIST_INTERVAL_MS);
+        return;
+    }
 
     try {
         // 심볼을 순차적으로 처리
         for (const symbol of symbols) {
             try {
-                console.log(`\n📊 ${symbol} 처리 시작`);
-                await main(symbol);
-                console.log(`✅ ${symbol} 처리 완료`);
+                console.log(`\n📊 ${symbol} 분석 시작: ${new Date().toLocaleTimeString()}`);
+                await checkSymbol(symbol);
+                console.log(`✅ ${symbol} 분석 완료: ${new Date().toLocaleTimeString()}`);
 
                 // 마지막 심볼이 아닌 경우에만 대기
                 if (symbol !== symbols[symbols.length - 1]) {
@@ -72,17 +78,66 @@ async function runMainLoop() {
                     await new Promise(resolve => setTimeout(resolve, COIN_INTERVAL_MS));
                 }
             } catch (err) {
-                console.error(`❌ [${symbol}] 처리 실패:`, err.message);
+                console.error(`❌ [${symbol}] 분석 실패:`, err.message);
+                bot.sendMessage(TELEGRAM_CHAT_ID, `❌ [${symbol}] 분석 실패: ${err.message}`);
             }
         }
     } catch (err) {
+        isRunning = false;
         console.error('❌ 루프 전체 실패:', err.message);
+        bot.sendMessage(TELEGRAM_CHAT_ID, `❌ 루프 전체 실패: ${err.message}`);
     } finally {
         // 모든 심볼 처리 후 다음 사이클까지 대기
         console.log(`\n⏳ 다음 트레이딩 사이클까지 ${LIST_INTERVAL_MS / 1000}초 대기...`);
-        setTimeout(runMainLoop, LIST_INTERVAL_MS);
+        setTimeout(runCheckSymbolLoop, LIST_INTERVAL_MS);
     }
 }
 
-// 시작
-runMainLoop();
+// 심볼 목록 (확장 가능)
+let isRunning = false;
+let symbols = [];
+
+const main = async () => {
+    bot.sendMessage(TELEGRAM_CHAT_ID, 'Initialize Bybit Trading Bot');
+    bot.onText(/\/add/, async (msg) => {
+        const symbol = msg.text.split(' ')[1];
+        if (!symbol) {
+            bot.sendMessage(TELEGRAM_CHAT_ID, '❌ 심볼을 입력해주세요. 예) /add BTCUSDT');
+            return;
+        }
+
+        symbols.push(`${symbol}USDT`);
+        bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol}USDT 추가됨`);
+    });    
+
+    bot.onText(/\/remove/, async (msg) => {
+        const symbol = msg.text.split(' ')[1];
+        if (!symbol) {
+            bot.sendMessage(TELEGRAM_CHAT_ID, '❌ 심볼을 입력해주세요. 예) /remove BTC');
+            return;
+        }
+
+        symbols = symbols.filter(s => s !== `${symbol}USDT`);
+        bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol}USDT 제거됨`);
+    });
+
+    bot.onText(/\/list/, async (msg) => {
+        bot.sendMessage(TELEGRAM_CHAT_ID, `✅ 현재 심볼 목록: ${symbols.join(', ')}`);
+    });
+
+    bot.onText(/\/start/, async (msg) => {
+        isRunning = true;
+        bot.sendMessage(TELEGRAM_CHAT_ID, 'Start Bybit Trading Bot');
+    });
+
+    bot.onText(/\/stop/, async (msg) => {
+        isRunning = false;
+        bot.sendMessage(TELEGRAM_CHAT_ID, 'Stop Bybit Trading Bot');
+    });
+
+    runCheckSymbolLoop();
+}
+
+(async () => {
+    await main();
+})();
