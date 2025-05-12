@@ -133,7 +133,7 @@ export async function placeBybitOrder(signal, symbol, capitalUSD, leverage) {
     // 2. 분할 주문
     for (let i = 0; i < numOrders; i++) {
         const price = entryPrices[i] || entryPrices[entryPrices.length - 1];
-        const rawQty = (perCapital * signal.leverage) / price;
+        const rawQty = (perCapital * leverage) / price;
         const qty = Math.floor(rawQty / 10) * 10;
 
         const orderParams = {
