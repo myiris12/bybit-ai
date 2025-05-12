@@ -37,16 +37,16 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 4. 사용자가 제공한 "atr" 값을 기준으로 다음과 같이 stop_loss 및 take_profit_levels를 계산합니다:
 
    - 롱 진입일 경우:
-     stop_loss = current_price - (2.0 * atr)
+     stop_loss = current_price - (2.2 * atr)
      take_profit_levels = [
-       current_price + (2.0 * atr),
+       current_price + (2.2 * atr),
        current_price + (3.5 * atr)
      ]
 
    - 숏 진입일 경우:
-     stop_loss = current_price + (2.0 * atr)
+     stop_loss = current_price + (2.2 * atr)
      take_profit_levels = [
-       current_price - (2.0 * atr),
+       current_price - (2.2 * atr),
        current_price - (3.5 * atr)
      ]
 

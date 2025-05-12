@@ -28,7 +28,7 @@ async function checkSymbol(symbol) {
 		const marketData = await getMarketData(symbol);
 		if (marketData.position) {
 			console.log('🔄 포지션 존재');
-			return;
+			return true;
 		}
 
 		// 마켓데이터 로그 JSON 파일로 저장
@@ -70,6 +70,8 @@ async function checkSymbol(symbol) {
 	} catch (error) {
 		console.error('Failed to fetch or analyze data:', error);
 	}
+
+	return false;
 }
 
 // checkSymbol 루프 함수
@@ -84,8 +86,10 @@ async function runCheckSymbolLoop() {
 		for (const symbol of symbols) {
 			try {
 				console.log(`\n📊 ${symbol} 분석 시작: ${new Date().toLocaleTimeString()}`);
-				await checkSymbol(symbol);
-				console.log(`✅ ${symbol} 분석 완료: ${new Date().toLocaleTimeString()}`);
+				const skip = await checkSymbol(symbol);
+				if (!skip) {
+					console.log(`✅ ${symbol} 분석 완료: ${new Date().toLocaleTimeString()}`);
+				}
 
 				console.log(`⏳ 다음 심볼 처리까지 ${COIN_INTERVAL_MS / 1000}초 대기...`);
 				await new Promise((resolve) => setTimeout(resolve, COIN_INTERVAL_MS));
@@ -117,8 +121,8 @@ const main = async () => {
 			return;
 		}
 
-		symbols.push(`${symbol}USDT`);
-		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol}USDT 추가됨`);
+		symbols.push(`${symbol.toUpperCase()}USDT`);
+		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol.toUpperCase()}USDT 추가됨`);
 	});
 
 	bot.onText(/\/remove/, async (msg) => {
@@ -128,8 +132,8 @@ const main = async () => {
 			return;
 		}
 
-		symbols = symbols.filter((s) => s !== `${symbol}USDT`);
-		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol}USDT 제거됨`);
+		symbols = symbols.filter((s) => s !== `${symbol.toUpperCase()}USDT`);
+		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol.toUpperCase()}USDT 제거됨`);
 	});
 
 	bot.onText(/\/list/, async (msg) => {
