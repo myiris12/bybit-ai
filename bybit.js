@@ -1,7 +1,7 @@
 import { RestClientV5 } from 'bybit-api';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { calculateMA, calculateRSI, calculateBollingerBands, calculateStochRSI } from './calc.js';
+import { calculateRSI, calculateBollingerBands, calculateStochRSI, calculateMACD, calculateEMA } from './calc.js';
 
 // Web Crypto API polyfill
 if (typeof global.crypto === 'undefined') {
@@ -30,77 +30,33 @@ export async function getMarketData(symbol) {
         const prices1m = candles1m.map(c => c.close);
         const prices5m = candles5m.map(c => c.close);
 
-        const bollinger1m = calculateBollingerBands(prices1m);
-        const bollinger5m = calculateBollingerBands(prices5m);
-
         const result = {
             symbol,
-            timeframes: {
+            time: new Date().toISOString(),
+            candles: {
+                '1m': candles1m,
+                '5m': candles5m
+            },
+            indicators: {
                 '1m': {
-                    'ohlcv': candles1m,
-                    'ma_series': {
-                        'ma7': calculateMA(prices1m, 7).slice(-5),
-                        'ma25': calculateMA(prices1m, 25).slice(-5),
-                    },
-                    'rsi14': calculateRSI(prices1m, 14).slice(-5),
-                    'stoch_rsi': calculateStochRSI(prices1m, 14).slice(-5),
-                    'bollinger': {
-                        'middle': bollinger1m.middle.slice(-5),
-                        'upper': bollinger1m.upper.slice(-5),
-                        'lower': bollinger1m.lower.slice(-5),
-                    }
+                    'rsi': calculateRSI(prices1m, 14),
+                    'stoch_rsi': calculateStochRSI(prices1m, 14),
+                    'bollinger': calculateBollingerBands(prices1m),
+                    'macd': calculateMACD(prices1m),
+                    'ema': calculateEMA(prices1m),
+                    'current_price': candles1m[candles1m.length - 1].close,
                 },
                 '5m': {
-                    'ohlcv': candles5m,
-                    'ma_series': {
-                        'ma7': calculateMA(prices5m, 7).slice(-5),
-                        'ma25': calculateMA(prices5m, 25).slice(-5),
-                    },
-                    'rsi14': calculateRSI(prices5m, 14).slice(-5),
-                    'stoch_rsi': calculateStochRSI(prices5m, 14).slice(-5),
-                    'bollinger': {
-                        'middle': bollinger5m.middle.slice(-5),
-                        'upper': bollinger5m.upper.slice(-5),
-                        'lower': bollinger5m.lower.slice(-5),
-                    }
+                    'rsi': calculateRSI(prices5m, 14),
+                    'stoch_rsi': calculateStochRSI(prices5m, 14),
+                    'bollinger': calculateBollingerBands(prices5m),
+                    'macd': calculateMACD(prices5m),
+                    'ema': calculateEMA(prices5m),
+                    'current_price': candles5m[candles5m.length - 1].close,
                 }
-            },
-            price_info: {
-                current_price: candles1m[candles1m.length - 1].close,
             },
             position
         };
-
-        // snapshot 추가
-        result.snapshot = {
-            '1m': {
-                'ma': {
-                    'ma7': result.timeframes['1m'].ma_series.ma7[result.timeframes['1m'].ma_series.ma7.length - 1],
-                    'ma25': result.timeframes['1m'].ma_series.ma25[result.timeframes['1m'].ma_series.ma25.length - 1],
-                },
-                'rsi14': result.timeframes['1m'].rsi14[result.timeframes['1m'].rsi14.length - 1],
-                'stoch_rsi': result.timeframes['1m'].stoch_rsi[result.timeframes['1m'].stoch_rsi.length - 1],
-                'bollinger': {
-                    'upper': result.timeframes['1m'].bollinger.upper[result.timeframes['1m'].bollinger.upper.length - 1],
-                    'middle': result.timeframes['1m'].bollinger.middle[result.timeframes['1m'].bollinger.middle.length - 1],
-                    'lower': result.timeframes['1m'].bollinger.lower[result.timeframes['1m'].bollinger.lower.length - 1],
-                },
-                price: result.timeframes['1m'].ohlcv[result.timeframes['1m'].ohlcv.length - 1].close,
-            },
-            '5m': {
-                'ma': {
-                    'ma7': result.timeframes['5m'].ma_series.ma7[result.timeframes['5m'].ma_series.ma7.length - 1],
-                    'ma25': result.timeframes['5m'].ma_series.ma25[result.timeframes['5m'].ma_series.ma25.length - 1],
-                },
-                'rsi14': result.timeframes['5m'].rsi14[result.timeframes['5m'].rsi14.length - 1],
-                'bollinger': {
-                    'upper': result.timeframes['5m'].bollinger.upper[result.timeframes['5m'].bollinger.upper.length - 1],
-                    'middle': result.timeframes['5m'].bollinger.middle[result.timeframes['5m'].bollinger.middle.length - 1],
-                    'lower': result.timeframes['5m'].bollinger.lower[result.timeframes['5m'].bollinger.lower.length - 1],
-                },
-                price: result.timeframes['5m'].ohlcv[result.timeframes['5m'].ohlcv.length - 1].close,
-            }
-        }
         return result;
     } catch (error) {
         console.error('Error fetching market data:', error);
