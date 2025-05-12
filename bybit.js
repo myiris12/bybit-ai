@@ -1,7 +1,7 @@
 import { RestClientV5 } from 'bybit-api';
 import dotenv from 'dotenv';
-import fetch from 'node-fetch';
 import crypto from 'crypto';
+import { calculateMA, calculateRSI, calculateBollingerBands } from './calc.js';
 
 // Web Crypto API polyfill
 if (typeof global.crypto === 'undefined') {
@@ -26,14 +26,30 @@ export async function getMarketData(symbol) {
         // 포지션 정보 가져오기
         const position = await getPosition(symbol);
 
+        // 가격 데이터 추출
+        const prices1m = candles1m.map(c => c.close);
+        const prices5m = candles5m.map(c => c.close);
+
         return {
             symbol,
             timeframes: {
                 '1m': {
                     'ohlcv': candles1m,
+                    'ma': {
+                        'ma7': calculateMA(prices1m, 7),
+                        'ma25': calculateMA(prices1m, 25),
+                    },
+                    'rsi14': calculateRSI(prices1m, 14),
+                    'bollinger': calculateBollingerBands(prices1m)
                 },
                 '5m': {
                     'ohlcv': candles5m,
+                    'ma': {
+                        'ma7': calculateMA(prices5m, 7),
+                        'ma25': calculateMA(prices5m, 25),
+                    },
+                    'rsi14': calculateRSI(prices5m, 14),
+                    'bollinger': calculateBollingerBands(prices5m)
                 }
             },
             price_info: {
