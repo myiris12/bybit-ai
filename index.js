@@ -1,6 +1,6 @@
 import { getMarketData, placeBybitOrder, updateBybitPosition, cancelAllOpenOrders, cancelOpenTPOrders } from './bybit.js';
 import { getTradingOpinion, getTradingSignal } from './gpt.js';
-
+import fs from 'fs';
 // 실행
 const CAPITAL_USD = 10;
 const LEVERAGE = 10;
@@ -9,6 +9,12 @@ async function main(symbol) {
     try {
         console.log(`🚀 Start Trading Signal: ${symbol}`);
         const marketData = await getMarketData(symbol);
+
+        // JSON 파일로 저장
+        // const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        // const filename = `market_data_${timestamp}.json`;
+        // fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
+
 
         // 트레이딩 의견 주석 처리
         // const tradingOpinion = await getTradingOpinion(marketData);

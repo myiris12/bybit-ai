@@ -67,7 +67,6 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 📌 전략 조건 (반드시 지켜야 함):
 
 - **long 포지션은 절대 금지**. 반드시 short 포지션만 판단하라.
-- stop_loss는 entry_zones 평균 가격보다 **0.5% 이상 차이**가 나야 한다.
 - 위 조건을 하나라도 만족하지 못하면 반드시 "action": "wait"으로 응답하라.
 - 절대로 조건을 무시하거나 임의로 완화하지 마라.
 
