@@ -30,12 +30,12 @@ export async function getMarketData(symbol) {
         const prices1m = candles1m.map(c => c.close);
         const prices5m = candles5m.map(c => c.close);
 
-        return {
+        const result = {
             symbol,
             timeframes: {
                 '1m': {
                     'ohlcv': candles1m,
-                    'ma': {
+                    'ma_series': {
                         'ma7': calculateMA(prices1m, 7),
                         'ma25': calculateMA(prices1m, 25),
                     },
@@ -44,7 +44,7 @@ export async function getMarketData(symbol) {
                 },
                 '5m': {
                     'ohlcv': candles5m,
-                    'ma': {
+                    'ma_series': {
                         'ma7': calculateMA(prices5m, 7),
                         'ma25': calculateMA(prices5m, 25),
                     },
@@ -57,6 +57,37 @@ export async function getMarketData(symbol) {
             },
             position
         };
+
+        // snapshot 추가
+        result.snapshot = {
+            '1m': {
+                'ma': {
+                    'ma7': result.timeframes['1m'].ma_series.ma7.find(v => v !== null),
+                    'ma25': result.timeframes['1m'].ma_series.ma25.find(v => v !== null),
+                },
+                'rsi14': result.timeframes['1m'].rsi14.find(v => v !== null),
+                'bollinger': {
+                    'upper': result.timeframes['1m'].bollinger.upper.find(v => v !== null),
+                    'middle': result.timeframes['1m'].bollinger.middle.find(v => v !== null),
+                    'lower': result.timeframes['1m'].bollinger.lower.find(v => v !== null),
+                },
+                price: result.timeframes['1m'].ohlcv[0].close,
+            },
+            '5m': {
+                'ma': {
+                    'ma7': result.timeframes['5m'].ma_series.ma7.find(v => v !== null),
+                    'ma25': result.timeframes['5m'].ma_series.ma25.find(v => v !== null),
+                },
+                'rsi14': result.timeframes['5m'].rsi14.find(v => v !== null),
+                'bollinger': {
+                    'upper': result.timeframes['5m'].bollinger.upper.find(v => v !== null),
+                    'middle': result.timeframes['5m'].bollinger.middle.find(v => v !== null),
+                    'lower': result.timeframes['5m'].bollinger.lower.find(v => v !== null),
+                },
+                price: result.timeframes['5m'].ohlcv[0].close,
+            }
+        }
+        return result;
     } catch (error) {
         console.error('Error fetching market data:', error);
         throw error;

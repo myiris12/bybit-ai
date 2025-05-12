@@ -13,33 +13,35 @@ export function calculateMA(prices, period) {
 }
 
 export function calculateRSI(prices, period = 14) {
-    const rsi = [];
+    const rsi = Array(period).fill(null); // 앞부분은 계산 불가로 null 채움
+
     let gains = 0;
     let losses = 0;
 
-    // 첫 번째 RSI 계산을 위한 초기값 설정
-    for (let i = 1; i < period; i++) {
-        const difference = prices[i] - prices[i - 1];
-        if (difference >= 0) {
-            gains += difference;
+    for (let i = 1; i <= period; i++) {
+        const diff = prices[i] - prices[i - 1];
+        if (diff >= 0) {
+            gains += diff;
         } else {
-            losses -= difference;
+            losses -= diff;
         }
     }
 
     let avgGain = gains / period;
     let avgLoss = losses / period;
 
-    // 첫 번째 RSI 값 계산
-    let rs = avgGain / avgLoss;
+    let rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
     rsi.push(100 - (100 / (1 + rs)));
 
-    // 나머지 RSI 값 계산
-    for (let i = period; i < prices.length; i++) {
-        const difference = prices[i] - prices[i - 1];
-        avgGain = ((avgGain * (period - 1)) + (difference > 0 ? difference : 0)) / period;
-        avgLoss = ((avgLoss * (period - 1)) + (difference < 0 ? -difference : 0)) / period;
-        rs = avgGain / avgLoss;
+    for (let i = period + 1; i < prices.length; i++) {
+        const diff = prices[i] - prices[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+
+        avgGain = ((avgGain * (period - 1)) + gain) / period;
+        avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+
+        rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
         rsi.push(100 - (100 / (1 + rs)));
     }
 
