@@ -81,7 +81,7 @@ async function checkSymbol(symbol) {
 
 // checkSymbol 루프 함수
 async function runCheckSymbolLoop() {
-    if (!isRunning) {
+    if (!isRunning || symbols.length === 0) {
         setTimeout(runCheckSymbolLoop, COIN_INTERVAL_MS);
         return;
     }
@@ -115,7 +115,7 @@ async function runCheckSymbolLoop() {
 // 심볼 목록 (확장 가능)
 let isRunning = true;
 let isDebug = false;
-let symbols = ['BIGTIMEUSDT'];
+let symbols = [];
 let useLong = true;
 let useShort = true;
 
