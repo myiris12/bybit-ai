@@ -77,7 +77,7 @@ async function checkSymbol(symbol) {
 // checkSymbol 루프 함수
 async function runCheckSymbolLoop() {
 	if (!isRunning) {
-		setTimeout(runCheckSymbolLoop, LIST_INTERVAL_MS);
+		setTimeout(runCheckSymbolLoop, COIN_INTERVAL_MS);
 		return;
 	}
 
