@@ -20,8 +20,8 @@ const client = new RestClientV5({
 export async function getMarketData(symbol) {
     try {
         // 1분봉, 5분봉 데이터 가져오기
-        const candles1m = await getCandles(symbol, '1', 50);
-        const candles5m = await getCandles(symbol, '5', 50);
+        const candles1m = await getCandles(symbol, '1', 100);
+        const candles5m = await getCandles(symbol, '5', 100);
 
         // 포지션 정보 가져오기
         const position = await getPosition(symbol);
