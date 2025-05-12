@@ -10,9 +10,9 @@ async function main(symbol) {
         console.log(`🚀 Start Trading Signal: ${symbol}`);
         const marketData = await getMarketData(symbol);
 
-        const tradingOpinion = await getTradingOpinion(marketData);
-        console.log(tradingOpinion);
-
+        // 트레이딩 의견 주석 처리
+        // const tradingOpinion = await getTradingOpinion(marketData);
+        // console.log(tradingOpinion);
         
         const tradingSignal = await getTradingSignal(marketData);
         console.log('Trading Signal:', tradingSignal);

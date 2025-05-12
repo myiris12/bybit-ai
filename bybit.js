@@ -28,8 +28,17 @@ export async function getMarketData(symbol) {
 
         return {
             symbol,
-            candles_1m: candles1m,
-            candles_5m: candles5m,
+            timeframes: {
+                '1m': {
+                    'ohlcv': candles1m,
+                },
+                '5m': {
+                    'ohlcv': candles5m,
+                }
+            },
+            price_info: {
+                current_price: candles1m[0].close,
+            },
             position
         };
     } catch (error) {
