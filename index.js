@@ -12,7 +12,7 @@ async function main(symbol) {
 
         // JSON 파일로 저장
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `market_data_${timestamp}.json`;
+        const filename = `logs/market_data_${timestamp}.json`;
         fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 
 
