@@ -40,17 +40,17 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
      stop_loss = current_price - (2.2 * atr)
      take_profit_levels = [
        current_price + (2.2 * atr),
-       current_price + (3.5 * atr)
+       current_price + (4.4 * atr)
      ]
 
    - 숏 진입일 경우:
      stop_loss = current_price + (2.2 * atr)
      take_profit_levels = [
        current_price - (2.2 * atr),
-       current_price - (3.5 * atr)
+       current_price - (4.4 * atr)
      ]
 
-5. trailing_stop은 atr의 약 50~70% 범위에서 적절히 설정합니다. (예: 1.0 * atr)
+5. trailing_stop은 atr의 약 50~70% 범위에서 적절히 설정합니다. (예: 0.7 * atr)
 
 6. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
 `;

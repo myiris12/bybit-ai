@@ -109,9 +109,12 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 		orderLinkId: `gpt-signal-${Date.now()}`,
 	};
 
-	// ✅ SL만 설정
+	// ✅ SL, TP 설정
 	if (signal.stop_loss) {
-		orderParams.stopLoss = signal.stop_loss.toFixed(4);
+		orderParams.stopLoss = signal.stop_loss.toFixed(6);
+		if (signal.take_profit_levels && signal.take_profit_levels.length > 1) {
+			orderParams.takeProfit = signal.take_profit_levels[1].toFixed(6);
+		}
 	}
 
 	console.log(`📦 주문 파라미터:`, orderParams);
@@ -127,9 +130,9 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 		console.error(`❌ 주문 예외 발생:`, e.message || e);
 	}
 
-	// TP 주문 추가
+	// TP 주문 추가, 마지막 TP 가격은 limit 말고 take profit 으로 설정한다.
 	if (signal.take_profit_levels) {
-		for (let i = 0; i < signal.take_profit_levels.length; i++) {
+		for (let i = 0; i < signal.take_profit_levels.length - 1; i++) {
 			const tpPrice = signal.take_profit_levels[i];
 			const ratio = 0.5;
 			const tpQty = Math.floor((qty * ratio) / 10) * 10;
@@ -139,7 +142,7 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 				symbol,
 				side: side === 'Sell' ? 'Buy' : 'Sell',
 				orderType: 'Limit',
-				price: tpPrice.toFixed(4),
+				price: tpPrice.toFixed(6),
 				qty: tpQty.toFixed(4),
 				timeInForce: 'GTC',
 				reduceOnly: true,
@@ -383,11 +386,10 @@ export async function getPositionsLog() {
 						profit = '+' + profit;
 					}
 
-					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${
-						position.leverage
-					}x) ${position.symbol.replace('USDT', '')} ${parseInt(
-						position.positionValue
-					).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
+					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${position.leverage
+						}x) ${position.symbol.replace('USDT', '')} ${parseInt(
+							position.positionValue
+						).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
 					resultStr += logStr;
 
 					totalPnl += Number(position.unrealisedPnl);
