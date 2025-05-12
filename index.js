@@ -1,5 +1,6 @@
 import { getMarketData, placeBybitOrder, updateBybitPosition, cancelAllOpenOrders, cancelOpenTPOrders, cancelUnfilledOrdersAfterTimeout } from './bybit.js';
 import { getTradingOpinion, getTradingSignal } from './gpt.js';
+import { getPositionsLog } from './bybit.js';
 import fs from 'fs';
 import telegramBot from 'node-telegram-bot-api';
 
@@ -133,6 +134,13 @@ const main = async () => {
     bot.onText(/\/stop/, async (msg) => {
         isRunning = false;
         bot.sendMessage(TELEGRAM_CHAT_ID, 'Stop Bybit Trading Bot');
+    });
+
+    bot.onText(/\/position/, async (msg) => {
+        const position = await getPositionsLog();
+        bot.sendMessage(TELEGRAM_CHAT_ID, position, {
+            parse_mode: 'HTML'
+        });
     });
 
     runCheckSymbolLoop();

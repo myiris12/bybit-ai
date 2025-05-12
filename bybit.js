@@ -359,6 +359,53 @@ export async function cancelUnfilledOrdersAfterTimeout(symbol, timeoutMs = 3 * 6
     }, timeoutMs);
 }
 
+export async function getPositionsLog() {
+    let resultStr = '';
+
+    try {
+        const response = await client.getPositionInfo({
+            category: 'linear',
+            settleCoin: 'USDT'
+        });
+
+        if (response.retCode === 0) {
+            const positions = response.result.list;
+            
+            if (positions.length === 0) {
+                return;
+            }
+            let totalPnl = 0;
+            positions.forEach((position) => {
+                if (position.symbol === 'BTCUSDT') {
+                    const logStr = `## BTC ${parseInt(position.markPrice).toLocaleString()} ##\n\n`;
+                    resultStr += logStr;
+                    return;
+                }
+                if (parseFloat(position.size) > 0) {
+                    let profit = ((position.unrealisedPnl / position.positionValue) * 100).toFixed(1);
+                    if (profit > 0) {
+                        profit = '+' + profit;
+                    }
+                    
+                    const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${position.leverage}x) ${position.symbol.replace('USDT', '')} ${parseInt(position.positionValue).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
+                    resultStr += logStr;
+
+                    totalPnl += Number(position.unrealisedPnl);
+                }
+            });
+
+            const logStr = `\n총 포지션 P&L: ${totalPnl.toFixed(2)}$\n`;
+            resultStr += logStr;
+        } else {
+            console.error('에러:', response.retMsg);
+        }
+    } catch (error) {
+        console.error('API 호출 중 에러 발생:', error.message);
+    }
+
+    return resultStr;
+}
+
 async function getCandles(symbol, interval, limit) {
     const klineResponse = await client.getKline({
         category: 'linear',
