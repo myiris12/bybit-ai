@@ -37,11 +37,11 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 
 {
   "action": "update_position",
-  "tp_levels": [0.2305, 0.2280],
-  "tp_ratios": [0.5, 0.5],
+  "tp_levels": [0.2305, 0.2280, 0.2260],
+  "tp_ratios": [0.3, 0.3, 0.4],
   "trailing_stop": {
     "enabled": true,
-    "distance": 0.0020
+    "distance": 0.0025
   },
   "adjust_stop_loss": 0.2375,
   "reason": "한국어로 된 포지션 관리 이유"
@@ -67,7 +67,7 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 
 - 반드시 숏 포지션만 판단하라. 롱 포지션은 절대 금지.
 - 1분봉은 **진입 타이밍 판단** 용도로 사용하라.
-- 5분봉은 **추세 보조 지표 및 손절/익절 기준 설정**에 사용하라.
+- 5분봉은 **추세 보조 지표 및 SL/TP 기준 설정**에 사용하라.
 
 🟡 아래 진입 조건 중 **2가지 이상 충족**되면 숏 진입을 고려할 수 있다:
 - MA7이 최근 3개 값 기준으로 **하락 전환됨** (예: [0.2189, 0.2187, 0.2183])
@@ -80,11 +80,16 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 🚫 아래 조건 중 하나라도 해당되면 반드시 "action": "wait"으로 응답하라:
 - RSI(1m 또는 5m) < 25 (과매도 상태)
 - Stoch RSI < 0.3이면서 RSI도 45 이하
-- stop_loss는 **entry 평균가보다 반드시 최소 0.7% 이상 차이나야 하며**, **가능하면 1.0% 이상 거리로 설정**해야 한다.  
-  stop_loss가 entry에 너무 가까운 경우는 절대 허용하지 말고 반드시 관망하라.
+- stop_loss는 entry 평균가보다 **0.7% 이상** 차이 나야 하며, 가능하면 **1.0% 이상 거리로 설정**
 - tp_levels는 entry 평균가보다 **0.8% 이상** 차이나야 하며, **1.5% ~ 2.5% 분할**도 고려할 것
 - entry_zones는 최소 **0.3% 이상** 차이가 나야 한다
 - trailing_stop.distance는 entry 평균가 기준 **1.0% 이상**이어야 한다
+
+📌 TP 분할 전략:
+
+- 진입 시 tp_levels는 3개로 설정하고 tp_ratios는 [0.3, 0.3, 0.4]로 한다.
+- tp_levels는 반드시 **점점 더 낮은 가격 순서로**, TP3는 가장 깊은 목표가 되어야 한다.
+- update_position을 생성할 때도 항상 tp_levels는 위 구조를 따른다.
 
 ---
 
