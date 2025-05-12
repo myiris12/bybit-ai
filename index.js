@@ -1,4 +1,4 @@
-import { getMarketData, placeBybitOrder, updateBybitPosition, cancelAllOpenOrders, cancelOpenTPOrders } from './bybit.js';
+import { getMarketData, placeBybitOrder, updateBybitPosition, cancelAllOpenOrders, cancelOpenTPOrders, cancelUnfilledOrdersAfterTimeout } from './bybit.js';
 import { getTradingOpinion, getTradingSignal } from './gpt.js';
 import fs from 'fs';
 // 실행
@@ -7,13 +7,13 @@ const LEVERAGE = 10;
 
 async function main(symbol) {
     try {
-        console.log(`🚀 Start Trading Signal: ${symbol}`);
+        console.log(`🚀 Start Trading Signal: ${symbol} - ${new Date().toLocaleTimeString()}`);
         const marketData = await getMarketData(symbol);
 
         // JSON 파일로 저장
-        // const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        // const filename = `market_data_${timestamp}.json`;
-        // fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `market_data_${timestamp}.json`;
+        fs.writeFileSync(filename, JSON.stringify(marketData, null, 2));
 
 
         // 트레이딩 의견 주석 처리
@@ -27,6 +27,7 @@ async function main(symbol) {
             case 'enter_position':
                 await cancelAllOpenOrders(symbol);
                 await placeBybitOrder(tradingSignal, symbol, CAPITAL_USD, LEVERAGE);
+                cancelUnfilledOrdersAfterTimeout(symbol, 1000 * 30);
                 break;
             case 'update_position':
                 await cancelOpenTPOrders(symbol);
@@ -46,10 +47,10 @@ async function main(symbol) {
 }
 
 // 심볼 목록 (확장 가능)
-let symbols = ['PUNDIXUSDT'];
+let symbols = ['MOVEUSDT'];
 
 // 코인 별 모니터링 간격 (ms)
-const COIN_INTERVAL_MS = 10 * 1000;
+const COIN_INTERVAL_MS = 5 * 1000;
 // 심볼 별 모니터링 간격 (ms)
 const LIST_INTERVAL_MS = 30 * 1000;
 
