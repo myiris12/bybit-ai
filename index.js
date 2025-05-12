@@ -8,7 +8,7 @@ const CAPITAL_USD = 10;
 // 레버리지
 const LEVERAGE = 10;
 // 코인 별 모니터링 간격 (ms)
-const COIN_INTERVAL_MS = 5 * 1000;
+const COIN_INTERVAL_MS = 10 * 1000;
 // 심볼 별 모니터링 간격 (ms)
 const LIST_INTERVAL_MS = 30 * 1000;
 
@@ -94,8 +94,8 @@ async function runCheckSymbolLoop() {
 }
 
 // 심볼 목록 (확장 가능)
-let isRunning = false;
-let symbols = [];
+let isRunning = true;
+let symbols = ['MOVEUSDT'];
 
 const main = async () => {
     bot.sendMessage(TELEGRAM_CHAT_ID, 'Initialize Bybit Trading Bot');

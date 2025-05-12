@@ -30,28 +30,39 @@ export async function getMarketData(symbol) {
         const prices1m = candles1m.map(c => c.close);
         const prices5m = candles5m.map(c => c.close);
 
+        const bollinger1m = calculateBollingerBands(prices1m);
+        const bollinger5m = calculateBollingerBands(prices5m);
+
         const result = {
             symbol,
             timeframes: {
                 '1m': {
                     'ohlcv': candles1m,
                     'ma_series': {
-                        'ma7': calculateMA(prices1m, 7),
-                        'ma25': calculateMA(prices1m, 25),
+                        'ma7': calculateMA(prices1m, 7).slice(-5),
+                        'ma25': calculateMA(prices1m, 25).slice(-5),
                     },
-                    'rsi14': calculateRSI(prices1m, 14),
-                    'stoch_rsi': calculateStochRSI(prices1m, 14),
-                    'bollinger': calculateBollingerBands(prices1m)
+                    'rsi14': calculateRSI(prices1m, 14).slice(-5),
+                    'stoch_rsi': calculateStochRSI(prices1m, 14).slice(-5),
+                    'bollinger': {
+                        'middle': bollinger1m.middle.slice(-5),
+                        'upper': bollinger1m.upper.slice(-5),
+                        'lower': bollinger1m.lower.slice(-5),
+                    }
                 },
                 '5m': {
                     'ohlcv': candles5m,
                     'ma_series': {
-                        'ma7': calculateMA(prices5m, 7),
-                        'ma25': calculateMA(prices5m, 25),
+                        'ma7': calculateMA(prices5m, 7).slice(-5),
+                        'ma25': calculateMA(prices5m, 25).slice(-5),
                     },
-                    'rsi14': calculateRSI(prices5m, 14),
-                    'stoch_rsi': calculateStochRSI(prices5m, 14),
-                    'bollinger': calculateBollingerBands(prices5m)
+                    'rsi14': calculateRSI(prices5m, 14).slice(-5),
+                    'stoch_rsi': calculateStochRSI(prices5m, 14).slice(-5),
+                    'bollinger': {
+                        'middle': bollinger5m.middle.slice(-5),
+                        'upper': bollinger5m.upper.slice(-5),
+                        'lower': bollinger5m.lower.slice(-5),
+                    }
                 }
             },
             price_info: {
@@ -353,7 +364,7 @@ async function getCandles(symbol, interval, limit) {
         category: 'linear',
         symbol: symbol,
         interval: interval,
-        limit: 50
+        limit: limit
     });
 
     // 응답 데이터 가공
@@ -364,7 +375,6 @@ async function getCandles(symbol, interval, limit) {
         low: parseFloat(candle[3]),
         close: parseFloat(candle[4]),
         volume: parseFloat(candle[5]),
-        turnover: parseFloat(candle[6])
     })).reverse(); // 최신 데이터가 맨 뒤로 오도록 reverse
 
     return candles;
