@@ -1,0 +1,11 @@
+{
+	"printWidth": 120,
+	"singleQuote": true,
+	"useTabs": true,
+	"tabWidth": 4,
+	"editor.insertSpaces": true,
+	"editor.tabSize": 4,
+	"html.format.wrapLineLength": 140,
+	"html.format.wrapAttributes": "auto",
+	"html.format.indentInnerHtml": true
+}
