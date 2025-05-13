@@ -140,6 +140,10 @@ const main = async () => {
 		}
 
 		symbols.push(`${symbol.toUpperCase()}USDT`);
+
+		// 심볼 목록 파일 저장
+		fs.writeFileSync('symbols.txt', symbols.join('\n'));
+
 		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol.toUpperCase()}USDT 추가됨`);
 	});
 
@@ -156,6 +160,10 @@ const main = async () => {
 		}
 
 		symbols = symbols.filter((s) => s !== `${symbol.toUpperCase()}USDT`);
+
+		// 심볼 목록 파일 저장
+		fs.writeFileSync('symbols.txt', symbols.join('\n'));
+
 		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ ${symbol.toUpperCase()}USDT 제거됨`);
 	});
 
@@ -194,6 +202,12 @@ const main = async () => {
 			parse_mode: 'HTML',
 		});
 	});
+
+	// 초기 심볼 목록 파일 읽기
+	if (fs.existsSync('symbols.txt')) {
+		symbols = fs.readFileSync('symbols.txt', 'utf8').split('\n');
+		console.log('🔄 초기 심볼 목록:', symbols);
+	}
 
 	runCheckSymbolLoop();
 };
