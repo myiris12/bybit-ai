@@ -388,6 +388,7 @@ export async function cancelUnfilledOrdersAfterTimeout(symbol, timeoutMs = 3 * 6
 	}, timeoutMs);
 }
 
+// 현재 내 포지션 전체 로그
 export async function getPositionsLog() {
 	let resultStr = '';
 
@@ -405,11 +406,6 @@ export async function getPositionsLog() {
 			}
 			let totalPnl = 0;
 			positions.forEach((position) => {
-				if (position.symbol === 'BTCUSDT') {
-					const logStr = `## BTC ${parseInt(position.markPrice).toLocaleString()} ##\n\n`;
-					resultStr += logStr;
-					return;
-				}
 				if (parseFloat(position.size) > 0) {
 					let profit = ((position.unrealisedPnl / position.positionValue) * 100).toFixed(1);
 					if (profit > 0) {
@@ -440,6 +436,16 @@ export async function getPositionsLog() {
 		return '🟢 현재 포지션 없음';
 	}
 	return resultStr;
+}
+
+// 심볼 하나 정보 얻기
+export async function getSymbolInfo(symbol) {
+	const ticker = await client.getTickers({
+		category: 'linear',
+		symbol: symbol,
+	});
+
+	return ticker;
 }
 
 async function getCandles(symbol, interval, limit) {
