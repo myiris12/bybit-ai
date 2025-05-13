@@ -17,6 +17,8 @@ const CAPITAL_USD = 10;
 const LEVERAGE = 10;
 // 코인 별 모니터링 간격 (ms)
 const COIN_INTERVAL_MS = 10 * 1000;
+// 스킵 코인 별 모니터링 간격 (ms)
+const SKIP_COIN_INTERVAL_MS = 3 * 1000;
 
 // init telegram bot
 const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
@@ -94,10 +96,12 @@ async function runCheckSymbolLoop() {
 				const skip = await checkSymbol(symbol);
 				if (!skip) {
 					console.log(`✅ ${symbol} 분석 완료: ${new Date().toLocaleTimeString()}`);
+					console.log(`⏳ 다음 심볼 처리까지 ${COIN_INTERVAL_MS / 1000}초 대기...`);
+					await new Promise((resolve) => setTimeout(resolve, COIN_INTERVAL_MS));
+				} else {
+					console.log(`⏳ 다음 심볼 처리까지 ${SKIP_COIN_INTERVAL_MS / 1000}초 대기...`);
+					await new Promise((resolve) => setTimeout(resolve, SKIP_COIN_INTERVAL_MS));
 				}
-
-				console.log(`⏳ 다음 심볼 처리까지 ${COIN_INTERVAL_MS / 1000}초 대기...`);
-				await new Promise((resolve) => setTimeout(resolve, COIN_INTERVAL_MS));
 			} catch (err) {
 				console.error(`❌ [${symbol}] 분석 실패:`, err.message);
 				bot.sendMessage(TELEGRAM_CHAT_ID, `❌ [${symbol}] 분석 실패: ${err.message}`);
