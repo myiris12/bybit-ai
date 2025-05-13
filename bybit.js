@@ -88,7 +88,7 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 		return;
 	}
 
-	// 현재 가격 조회
+	// 2. 현재 가격 조회
 	const ticker = await client.getTickers({
 		category: 'linear',
 		symbol: symbol,
@@ -98,6 +98,7 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 	const rawQty = (capitalUSD * leverage) / currentPrice;
 	const qty = Math.floor(rawQty / 10) * 10;
 
+	// 4. 주문 정보 확인
 	const orderParams = {
 		category: 'linear',
 		symbol,
@@ -109,12 +110,24 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 		orderLinkId: `gpt-signal-${Date.now()}`,
 	};
 
-	// ✅ SL, TP 설정
+	// 5. SL 설정
 	if (signal.stop_loss) {
-		orderParams.stopLoss = signal.stop_loss.toFixed(6);
-		if (signal.take_profit_levels && signal.take_profit_levels.length > 1) {
-			orderParams.takeProfit = signal.take_profit_levels[1].toFixed(6);
-		}
+		// SL 가격은 현재 가격의 5% 이상 차이가 나지 않도록 한다.
+		let stopLossPrice = getRestrictedPrice(signal.stop_loss, currentPrice, side, 0.05);
+		orderParams.stopLoss = stopLossPrice.toFixed(6);
+	}
+
+	// 6. TP2 설정
+	// TP 가격은 2개만 들어온다고 가정함
+	if (signal.take_profit_levels && signal.take_profit_levels.length > 1) {
+		// TP2 가격은 현재 가격의 10% 이상 차이가 나지 않도록 한다.
+		let takeProfit2Price = getRestrictedPrice(
+			signal.take_profit_levels[1],
+			currentPrice,
+			side === 'Sell' ? 'Buy' : 'Sell',
+			0.1
+		);
+		orderParams.takeProfit = takeProfit2Price.toFixed(6);
 	}
 
 	console.log(`📦 주문 파라미터:`, orderParams);
@@ -130,52 +143,69 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 		console.error(`❌ 주문 예외 발생:`, e.message || e);
 	}
 
-	// TP 주문 추가, 마지막 TP 가격은 limit 말고 take profit 으로 설정한다.
+	// 7. TP1 주문 추가, 마지막 TP2 가격은 limit 말고 take profit 으로 주문 넣을 때 설정함
+	// TP 가격은 2개만 들어온다고 가정함
 	if (signal.take_profit_levels) {
-		for (let i = 0; i < signal.take_profit_levels.length - 1; i++) {
-			const tpPrice = signal.take_profit_levels[i];
-			const ratio = 0.5;
-			const tpQty = Math.floor((qty * ratio) / 10) * 10;
+		// TP1 가격은 현재 가격의 5% 이상 차이가 나지 않도록 한다.
+		let takeProfit1Price = getRestrictedPrice(
+			signal.take_profit_levels[0],
+			currentPrice,
+			side === 'Sell' ? 'Buy' : 'Sell',
+			0.05
+		);
 
-			const tpOrder = {
-				category: 'linear',
-				symbol,
-				side: side === 'Sell' ? 'Buy' : 'Sell',
-				orderType: 'Limit',
-				price: tpPrice.toFixed(6),
-				qty: tpQty.toFixed(4),
-				timeInForce: 'GTC',
-				reduceOnly: true,
-				orderLinkId: `tp-${Date.now()}-${i}`,
-			};
+		const ratio = 0.5;
+		const tpQty = Math.floor((qty * ratio) / 10) * 10;
 
+		const tpOrder = {
+			category: 'linear',
+			symbol,
+			side: side === 'Sell' ? 'Buy' : 'Sell',
+			orderType: 'Limit',
+			price: takeProfit1Price.toFixed(6),
+			qty: tpQty.toFixed(4),
+			timeInForce: 'GTC',
+			reduceOnly: true,
+			orderLinkId: `tp-${Date.now()}-${i}`,
+		};
+
+		try {
+			const res = await client.submitOrder(tpOrder);
+			if (res.retCode === 0) {
+				console.log(`✅ TP 주문 ${i + 1} 등록 완료 (수량: ${tpQty})`);
+			} else {
+				console.error(`❌ TP 주문 실패:`, res.retMsg);
+			}
+		} catch (e) {
+			console.error(`❌ TP 예외 발생:`, e.message || e);
+		}
+
+		// 트레일링 스탑 설정
+		if (signal.trailing_stop) {
 			try {
-				const res = await client.submitOrder(tpOrder);
-				if (res.retCode === 0) {
-					console.log(`✅ TP 주문 ${i + 1} 등록 완료 (수량: ${tpQty})`);
-				} else {
-					console.error(`❌ TP 주문 실패:`, res.retMsg);
-				}
+				await client.setTradingStop({
+					category: 'linear',
+					symbol,
+					trailingStop: signal.trailing_stop.toFixed(6),
+					activePrice: takeProfit1Price.toFixed(6),
+				});
+				console.log('✅ 트레일링 스탑 설정 완료 (활성화 가격: ' + takeProfit1Price.toFixed(6) + ')');
 			} catch (e) {
-				console.error(`❌ TP 예외 발생:`, e.message || e);
+				console.error('❌ 트레일링 스탑 설정 실패:', e.message || e);
 			}
 		}
 	}
+}
 
-	// 트레일링 스탑 설정
-	if (signal.trailing_stop) {
-		try {
-			await client.setTradingStop({
-				category: 'linear',
-				symbol,
-				trailingStop: signal.trailing_stop.toFixed(6),
-				activePrice: signal.take_profit_levels[0].toFixed(4),
-			});
-			console.log('✅ 트레일링 스탑 설정 완료 (활성화 가격: ' + signal.take_profit_levels[0].toFixed(4) + ')');
-		} catch (e) {
-			console.error('❌ 트레일링 스탑 설정 실패:', e.message || e);
-		}
+function getRestrictedPrice(price, currentPrice, side, maxPriceChange) {
+	let restrictedPrice = price;
+	if (side === 'Sell' && restrictedPrice > currentPrice * (1 + maxPriceChange)) {
+		restrictedPrice = currentPrice * (1 + maxPriceChange);
 	}
+	if (side === 'Buy' && restrictedPrice < currentPrice * (1 - maxPriceChange)) {
+		restrictedPrice = currentPrice * (1 - maxPriceChange);
+	}
+	return restrictedPrice;
 }
 
 // [deprecated] 포지션 업데이트
@@ -386,10 +416,11 @@ export async function getPositionsLog() {
 						profit = '+' + profit;
 					}
 
-					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${position.leverage
-						}x) ${position.symbol.replace('USDT', '')} ${parseInt(
-							position.positionValue
-						).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
+					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${
+						position.leverage
+					}x) ${position.symbol.replace('USDT', '')} ${parseInt(
+						position.positionValue
+					).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
 					resultStr += logStr;
 
 					totalPnl += Number(position.unrealisedPnl);
