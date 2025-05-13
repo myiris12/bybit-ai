@@ -166,13 +166,13 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 			qty: tpQty.toFixed(4),
 			timeInForce: 'GTC',
 			reduceOnly: true,
-			orderLinkId: `tp-${Date.now()}-${i}`,
+			orderLinkId: `tp-${Date.now()}`,
 		};
 
 		try {
 			const res = await client.submitOrder(tpOrder);
 			if (res.retCode === 0) {
-				console.log(`✅ TP 주문 ${i + 1} 등록 완료 (수량: ${tpQty})`);
+				console.log(`✅ TP 주문 등록 완료 (수량: ${tpQty})`);
 			} else {
 				console.error(`❌ TP 주문 실패:`, res.retMsg);
 			}
