@@ -36,23 +36,25 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 3. 진입 조건이 모호하거나 지표 간 상충 신호가 존재하면 wait을 선택합니다.
 4. 사용자가 제공한 "atr" 값을 기준으로 다음과 같이 stop_loss 및 take_profit_levels를 계산합니다:
 
+   - 목표는 **실익 중심 단타 전략**이며 손익비는 **최소 1:1.5 이상**이 되도록 설정합니다.
+
    - 롱 진입일 경우:
-     stop_loss = current_price - (2.2 * atr)
+     stop_loss = current_price - (2.0 * atr)
      take_profit_levels = [
-       current_price + (2.2 * atr),
-       current_price + (4.4 * atr)
+       current_price + (3.0 * atr),
+       current_price + (5.0 * atr)
      ]
 
    - 숏 진입일 경우:
-     stop_loss = current_price + (2.2 * atr)
+     stop_loss = current_price + (2.0 * atr)
      take_profit_levels = [
-       current_price - (2.2 * atr),
-       current_price - (4.4 * atr)
+       current_price - (3.0 * atr),
+       current_price - (5.0 * atr)
      ]
 
-5. trailing_stop은 atr의 약 50~70% 범위에서 적절히 설정합니다. (예: 0.7 * atr)
+   - trailing_stop = 0.9 * atr
 
-6. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
+5. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
 `;
 
 const tradingSignalTool = {

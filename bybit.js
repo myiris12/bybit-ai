@@ -112,8 +112,8 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 
 	// 5. SL 설정
 	if (signal.stop_loss) {
-		// SL 가격은 현재 가격의 5% 이상 차이가 나지 않도록 한다.
-		let stopLossPrice = getRestrictedPrice(signal.stop_loss, currentPrice, side, 0.05);
+		// SL 가격은 현재 가격의 2.5% 이상 차이가 나지 않도록 한다.
+		let stopLossPrice = getRestrictedPrice(signal.stop_loss, currentPrice, side, 0.025);
 		orderParams.stopLoss = stopLossPrice.toFixed(6);
 	}
 
@@ -154,7 +154,7 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 			0.05
 		);
 
-		const ratio = 0.5;
+		const ratio = 0.6;
 		const tpQty = Math.floor((qty * ratio) / 10) * 10;
 
 		const tpOrder = {
