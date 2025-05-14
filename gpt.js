@@ -34,19 +34,18 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 1. action은 enter_long, enter_short, wait 중 하나여야 합니다.
 2. 판단 기준은 RSI, Stochastic RSI, MACD, Bollinger Bands, EMA 등을 1분봉/5분봉 기준으로 종합적으로 해석합니다.
 3. 진입 조건이 모호하거나 지표 간 상충 신호가 존재하면 wait을 선택합니다.
-4. 사용자가 제공한 "atr" 값을 기준으로 다음과 같이 stop_loss 및 take_profit_levels를 계산합니다:
-
-   - 목표는 **실익 중심 단타 전략**이며 손익비는 **최소 1:1.5 이상**이 되도록 설정합니다.
+4. 손절가는 진입가 기준 1.5% 고정 거리로 설정합니다.
+   익절 및 트레일링 스탑은 ATR 비율에 따라 계산합니다.
 
    - 롱 진입일 경우:
-     stop_loss = current_price - (2.3 * atr)
+     stop_loss = current_price * 0.985
      take_profit_levels = [
        current_price + (3.5 * atr),
        current_price + (6.0 * atr)
      ]
 
    - 숏 진입일 경우:
-     stop_loss = current_price + (2.3 * atr)
+     stop_loss = current_price * 1.015
      take_profit_levels = [
        current_price - (3.5 * atr),
        current_price - (6.0 * atr)

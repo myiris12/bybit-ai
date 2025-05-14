@@ -12,7 +12,7 @@ import fs from 'fs';
 import telegramBot from 'node-telegram-bot-api';
 
 // 한번 주문에 사용할 가격
-const CAPITAL_USD = 10;
+const CAPITAL_USD = 300;
 // 레버리지
 const LEVERAGE = 10;
 // 코인 별 모니터링 간격 (ms)
