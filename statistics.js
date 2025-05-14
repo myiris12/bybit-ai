@@ -104,10 +104,10 @@ const saveToCSV = (stats, filename) => {
 };
 
 const saveDetailedTradesToCSV = (positions, filename) => {
-	const header = '토큰이름,결과,PNL\n';
+	const header = '토큰이름,방향,평균진입가,평균종료가,결과,PNL\n';
 	const rows = positions.map((position) => {
 		const result = parseFloat(position.closedPnl) > 0 ? 'win' : 'loss';
-		return `${position.symbol},${result},${position.closedPnl}`;
+		return `${position.symbol},${position.side},${position.avgEntryPrice},${position.avgExitPrice},${result},${position.closedPnl}`;
 	});
 
 	const csvContent = header + rows.join('\n');
@@ -117,7 +117,7 @@ const saveDetailedTradesToCSV = (positions, filename) => {
 
 // 사용 예시
 const main = async () => {
-	const startTime = null; //moment().startOf('day').utc().valueOf();
+	const startTime = moment('2025-05-14 16:32').utc().valueOf();
 	const endTime = moment().endOf('day').utc().valueOf();
 	const summaryFilename = `bybit_stats_${moment().format('YYYY-MM-DD')}.csv`;
 	const detailedFilename = `bybit_detailed_trades_${moment().format('YYYY-MM-DD')}.csv`;
