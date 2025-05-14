@@ -448,6 +448,24 @@ export async function getSymbolInfo(symbol) {
 	return ticker;
 }
 
+// USDT 잔고 확인
+export async function getUSDTBalance() {
+	try {
+		const balance = await client.getWalletBalance({
+			accountType: 'UNIFIED',
+			coin: 'USDT',
+		});
+
+		if (balance.retCode === 0 && balance.result?.list?.[0]) {
+			return balance.result.list[0].totalEquity;
+		}
+		throw new Error('잔고 조회 실패');
+	} catch (error) {
+		console.error('USDT 잔고 조회 중 오류:', error.message);
+		throw error;
+	}
+}
+
 async function getCandles(symbol, interval, limit) {
 	const klineResponse = await client.getKline({
 		category: 'linear',

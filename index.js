@@ -7,7 +7,7 @@ import {
 	cancelUnfilledOrdersAfterTimeout,
 } from './bybit.js';
 import { getTradingOpinion, getTradingSignal } from './gpt.js';
-import { getPositionsLog, getSymbolInfo } from './bybit.js';
+import { getPositionsLog, getSymbolInfo, getUSDTBalance } from './bybit.js';
 import fs from 'fs';
 import telegramBot from 'node-telegram-bot-api';
 
@@ -205,6 +205,11 @@ const main = async () => {
 		bot.sendMessage(TELEGRAM_CHAT_ID, positionLog, {
 			parse_mode: 'HTML',
 		});
+	});
+
+	bot.onText(/\/balance/, async (msg) => {
+		const balance = await getUSDTBalance();
+		bot.sendMessage(TELEGRAM_CHAT_ID, `✅ 현재 잔고: ${balance.toLocaleString()}USDT`);
 	});
 
 	// 초기 심볼 목록 파일 읽기
