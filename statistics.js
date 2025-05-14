@@ -24,10 +24,15 @@ const getClosedPositions = async (startTime, endTime) => {
 		do {
 			const params = {
 				category: 'linear',
-				startTime,
-				endTime,
 				limit: 100,
 			};
+
+			if (startTime) {
+				params.startTime = startTime;
+			}
+			if (endTime) {
+				params.endTime = endTime;
+			}
 
 			if (cursor) {
 				params.cursor = cursor;
@@ -76,7 +81,7 @@ const getClosedPositions = async (startTime, endTime) => {
 			}
 		});
 
-		return statistics;
+		return { statistics, positions: allPositions };
 	} catch (error) {
 		console.error('에러 발생:', error);
 		throw error;
@@ -98,15 +103,29 @@ const saveToCSV = (stats, filename) => {
 	console.log(`통계가 ${filename}에 저장되었습니다.`);
 };
 
+const saveDetailedTradesToCSV = (positions, filename) => {
+	const header = '토큰이름,결과,PNL\n';
+	const rows = positions.map((position) => {
+		const result = parseFloat(position.closedPnl) > 0 ? 'win' : 'loss';
+		return `${position.symbol},${result},${position.closedPnl}`;
+	});
+
+	const csvContent = header + rows.join('\n');
+	fs.writeFileSync(filename, csvContent);
+	console.log(`상세 거래 정보가 ${filename}에 저장되었습니다.`);
+};
+
 // 사용 예시
 const main = async () => {
-	const startTime = moment().startOf('day').utc().valueOf();
+	const startTime = null; //moment().startOf('day').utc().valueOf();
 	const endTime = moment().endOf('day').utc().valueOf();
-	const filename = `bybit_stats_${moment().format('YYYY-MM-DD')}.csv`;
+	const summaryFilename = `bybit_stats_${moment().format('YYYY-MM-DD')}.csv`;
+	const detailedFilename = `bybit_detailed_trades_${moment().format('YYYY-MM-DD')}.csv`;
 
 	try {
-		const stats = await getClosedPositions(startTime, endTime);
-		saveToCSV(stats, filename);
+		const { statistics, positions } = await getClosedPositions(startTime, endTime);
+		saveToCSV(statistics, summaryFilename);
+		saveDetailedTradesToCSV(positions, detailedFilename);
 	} catch (error) {
 		console.error('실행 중 에러 발생:', error);
 	}
