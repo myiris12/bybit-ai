@@ -39,17 +39,17 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
    - 목표는 **실익 중심 단타 전략**이며 손익비는 **최소 1:1.5 이상**이 되도록 설정합니다.
 
    - 롱 진입일 경우:
-     stop_loss = current_price - (2.0 * atr)
+     stop_loss = current_price - (2.3 * atr)
      take_profit_levels = [
-       current_price + (3.0 * atr),
-       current_price + (5.0 * atr)
+       current_price + (3.5 * atr),
+       current_price + (6.0 * atr)
      ]
 
    - 숏 진입일 경우:
-     stop_loss = current_price + (2.0 * atr)
+     stop_loss = current_price + (2.3 * atr)
      take_profit_levels = [
-       current_price - (3.0 * atr),
-       current_price - (5.0 * atr)
+       current_price - (3.5 * atr),
+       current_price - (6.0 * atr)
      ]
 
    - trailing_stop = 0.9 * atr
