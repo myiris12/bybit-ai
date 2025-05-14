@@ -40,26 +40,20 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
    - 롱 진입일 경우:
      stop_loss = current_price * 0.985
      take_profit_levels = [
-       current_price + (3.5 * atr),
-       current_price + (6.0 * atr)
+       current_price + (2.2 * atr),
+       current_price + (4.4 * atr)
      ]
 
    - 숏 진입일 경우:
      stop_loss = current_price * 1.015
      take_profit_levels = [
-       current_price - (3.5 * atr),
-       current_price - (6.0 * atr)
+       current_price - (2.2 * atr),
+       current_price - (4.4 * atr)
      ]
 
-   - trailing_stop = 0.9 * atr
+   - trailing_stop = 0.7 * atr
 
-6. 진입 위치는 볼린저 밴드 기준 다음과 같은 필터 조건을 따릅니다:
-
-   - 롱 진입은 현재가가 볼린저 밴드 **상단보다 2% 이상 낮은 위치**에서만 허용합니다.
-   - 숏 진입은 현재가가 볼린저 밴드 **하단보다 2% 이상 높은 위치**에서만 허용합니다.
-   - 상단 근처에서의 롱 진입, 하단 근처에서의 숏 진입은 반전 위험으로 인해 허용하지 않습니다.
-
-7. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
+6. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
 `;
 
 const tradingSignalTool = {

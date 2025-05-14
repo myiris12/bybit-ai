@@ -117,7 +117,7 @@ const saveDetailedTradesToCSV = (positions, filename) => {
 
 // 사용 예시
 const main = async () => {
-	const startTime = moment('2025-05-14 16:32').utc().valueOf();
+	const startTime = moment('2025-05-15 00:23').utc().valueOf();
 	const endTime = moment().endOf('day').utc().valueOf();
 	const summaryFilename = `bybit_stats_${moment().format('YYYY-MM-DD')}.csv`;
 	const detailedFilename = `bybit_detailed_trades_${moment().format('YYYY-MM-DD')}.csv`;

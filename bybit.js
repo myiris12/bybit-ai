@@ -120,12 +120,12 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 	// 6. TP2 설정
 	// TP 가격은 2개만 들어온다고 가정함
 	if (signal.take_profit_levels && signal.take_profit_levels.length > 1) {
-		// TP2 가격은 현재 가격의 10% 이상 차이가 나지 않도록 한다.
+		// TP2 가격은 현재 가격의 6% 이상 차이가 나지 않도록 한다.
 		let takeProfit2Price = getRestrictedPrice(
 			signal.take_profit_levels[1],
 			currentPrice,
 			side === 'Sell' ? 'Buy' : 'Sell',
-			0.1
+			0.06
 		);
 		orderParams.takeProfit = takeProfit2Price.toFixed(6);
 	}
@@ -146,12 +146,12 @@ export async function placeBybitOrder(signal, symbol, side, capitalUSD, leverage
 	// 7. TP1 주문 추가, 마지막 TP2 가격은 limit 말고 take profit 으로 주문 넣을 때 설정함
 	// TP 가격은 2개만 들어온다고 가정함
 	if (signal.take_profit_levels) {
-		// TP1 가격은 현재 가격의 5% 이상 차이가 나지 않도록 한다.
+		// TP1 가격은 현재 가격의 3% 이상 차이가 나지 않도록 한다.
 		let takeProfit1Price = getRestrictedPrice(
 			signal.take_profit_levels[0],
 			currentPrice,
 			side === 'Sell' ? 'Buy' : 'Sell',
-			0.05
+			0.03
 		);
 
 		const ratio = 0.6;
@@ -412,11 +412,10 @@ export async function getPositionsLog() {
 						profit = '+' + profit;
 					}
 
-					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${
-						position.leverage
-					}x) ${position.symbol.replace('USDT', '')} ${parseInt(
-						position.positionValue
-					).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
+					const logStr = `${position.unrealisedPnl < 0 ? '🔴' : '🟢'} (${position.leverage
+						}x) ${position.symbol.replace('USDT', '')} ${parseInt(
+							position.positionValue
+						).toLocaleString()}$ [P&L] ${Number(position.unrealisedPnl).toFixed(2).padStart(8)} (${profit}%)\n`;
 					resultStr += logStr;
 
 					totalPnl += Number(position.unrealisedPnl);
