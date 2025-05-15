@@ -32,28 +32,41 @@ const TRADING_SIGNAL_SYSTEM_INSTRUCTION = `
 조건은 다음과 같습니다:
 
 1. action은 enter_long, enter_short, wait 중 하나여야 합니다.
-2. 판단 기준은 RSI, Stochastic RSI, MACD, Bollinger Bands, EMA 등을 1분봉/5분봉 기준으로 종합적으로 해석합니다.
-3. 진입 조건이 모호하거나 지표 간 상충 신호가 존재하면 wait을 선택합니다.
-4. 손절가는 항상 진입가의 1.5% 고정 거리로 설정합니다.
-5. 익절 및 트레일링 스탑은 ATR 값을 기반으로 다음과 같이 계산합니다:
 
-   - 롱 진입일 경우:
-     stop_loss = current_price * 0.985
-     take_profit_levels = [
-       current_price + (2.2 * atr),
-       current_price + (4.4 * atr)
-     ]
+2. 진입 조건은 다음과 같습니다 (롱 기준):
 
-   - 숏 진입일 경우:
-     stop_loss = current_price * 1.015
-     take_profit_levels = [
-       current_price - (2.2 * atr),
-       current_price - (4.4 * atr)
-     ]
+   - 1분봉 기준:
+     - RSI가 50 이상이며 최근 3개 값이 상승 중
+     - 현재 종가가 EMA(9)보다 높음
+     - 볼린저 밴드 중심선을 돌파했거나 상단 근처에 위치
+   - 5분봉 기준:
+     - MACD 히스토그램이 양수이며 최근 2개 값이 증가 중
+     - RSI > 55
+     - 볼린저 밴드 폭이 평균 이상이며 확장 중
+     - 거래량이 최근 20봉 평균 이상
 
-   - trailing_stop = 0.7 * atr
+   위 조건을 모두 충족할 경우에만 진입하십시오. 반대 방향인 숏 진입 시 조건은 반대로 적용하십시오.
 
-6. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
+3. 횡보장 회피 조건:
+   - 5분봉 볼린저 밴드 폭이 평균보다 작거나
+   - 최근 3개 1분봉이 동일 가격대에서 횡보 중이면 진입하지 마십시오.
+
+4. 손절가는 다음과 같이 계산합니다:
+
+   - ATR 값이 0.003 이상인 경우 → stop_loss = entry_price x 0.985
+   - ATR 값이 0.003 미만인 경우 → stop_loss = entry_price - (2.0 x ATR)
+
+5. 익절가는 다음과 같이 설정합니다:
+
+   - TP1 = entry_price + (3.2 x ATR)
+   - TP2 = entry_price + (5.5 x ATR)
+   - 숏일 경우는 반대로 계산하십시오.
+
+6. TP1 도달 시 전체 물량의 60%를 청산한다고 가정하고,
+   남은 40%에 대해 trailing_stop을 활성화합니다:
+   - trailing_stop = 0.9 x ATR
+
+7. 기타 설명 문장이나 텍스트는 절대 출력하지 마십시오. 출력은 반드시 위 JSON 형식만 사용하십시오.
 `;
 
 const tradingSignalTool = {
